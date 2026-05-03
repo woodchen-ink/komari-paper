@@ -1,4 +1,3 @@
-import { Flex, Text } from "@radix-ui/themes";
 import { useTranslation } from "react-i18next";
 import React, { useEffect, Suspense } from "react";
 const NodeDisplay = React.lazy(() => import("../components/NodeDisplay"));
@@ -30,28 +29,11 @@ const Index = () => {
   const InnerLayout = () => {
     const [t] = useTranslation();
     const { live_data } = useLiveData();
-    const [currentTime, setCurrentTime] = React.useState(
-      new Date().toLocaleTimeString(),
-    );
-    //document.title = t("home_title");
     //#region 节点数据
     const { nodeList, isLoading, error, refresh } = useNodeList();
 
-    // 独立的时间更新定时器
-    useEffect(() => {
-      const timer = setInterval(() => {
-        setCurrentTime(new Date().toLocaleTimeString());
-      }, 1000);
-      return () => clearInterval(timer);
-    }, []);
-
-    // 顶部 5 个状态卡: 时间 / 在线数 / 地区数 / 总流量 / 实时网速
+    // 顶部 4 个状态: 在线 / 地区 / 总流量 / 实时网速 (Time 已移除, 在 ticker 中无意义)
     const statusCards = [
-      {
-        key: "currentTime",
-        title: t("current_time"),
-        getValue: () => currentTime,
-      },
       {
         key: "currentOnline",
         title: t("current_online"),
@@ -79,11 +61,13 @@ const Index = () => {
       {
         key: "trafficOverview",
         title: t("traffic_overview"),
-        // 拆成两行 (上传 / 下载), 避免在窄 5 列布局下被挤换行
+        // ↑↓ 之间用 nbsp 拼接, 防止浏览器在普通空格处断行
         getValue: () => {
           const data = live_data?.data?.data;
           const online = live_data?.data?.online;
-          if (!data || !online) return "↑ 0 B\n↓ 0 B";
+          const fmt = (up: number, down: number) =>
+            `↑ ${formatBytes(up)}  ↓ ${formatBytes(down)}`;
+          if (!data || !online) return fmt(0, 0);
           const onlineSet = new Set(online);
           const values = Object.entries(data)
             .filter(([uuid]) => onlineSet.has(uuid))
@@ -96,7 +80,7 @@ const Index = () => {
             (acc, node) => acc + (node.network.totalDown || 0),
             0,
           );
-          return `↑ ${formatBytes(up)}\n↓ ${formatBytes(down)}`;
+          return fmt(up, down);
         },
       },
       {
@@ -105,7 +89,9 @@ const Index = () => {
         getValue: () => {
           const data = live_data?.data?.data;
           const online = live_data?.data?.online;
-          if (!data || !online) return "↑ 0 B/s\n↓ 0 B/s";
+          const fmt = (up: number, down: number) =>
+            `↑ ${formatSpeed(up)}  ↓ ${formatSpeed(down)}`;
+          if (!data || !online) return fmt(0, 0);
           const onlineSet = new Set(online);
           const values = Object.entries(data)
             .filter(([uuid]) => onlineSet.has(uuid))
@@ -118,7 +104,7 @@ const Index = () => {
             (acc, node) => acc + (node.network.down || 0),
             0,
           );
-          return `↑ ${formatSpeed(up)}\n↓ ${formatSpeed(down)}`;
+          return fmt(up, down);
         },
       },
     ];
@@ -149,16 +135,20 @@ const Index = () => {
 
     return (
       <div className="w-full max-w-5xl mx-auto">
-        {/* 顶部 summary: 不旋转, 内置极细分隔线像杂志 stat block */}
-        <div className="summary-card paper-card no-tilt p-6 mt-4 relative">
-          <div className="eyebrow mb-4">Status · Overview</div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-4 divide-x divide-[var(--ink-line-soft)]">
+        {/* 顶部 summary: 单行 ticker 风格, 像报纸页眉数据条
+            - 整体 inline 横排, 项与项之间用细竖线分隔
+            - 标签 + 数值紧贴, 字号小一档
+            - 窄屏自动换行 (flex-wrap), 不强行挤
+        */}
+        <div className="summary-card paper-card no-tilt mt-4 px-4 py-2 relative overflow-x-auto scrollbar-hidden">
+          {/* 强制单行: nowrap + 容器溢出横滚, 不再换行 */}
+          <div className="flex items-baseline gap-x-4 text-sm leading-snug whitespace-nowrap">
             {statusCards.map((card, i) => (
-              <TopCard
+              <TopStat
                 key={card.key}
                 title={card.title}
                 value={card.getValue()}
-                noBorder={i === 0}
+                divider={i > 0}
               />
             ))}
           </div>
@@ -177,45 +167,41 @@ const Index = () => {
 
 export default Index;
 
-type TopCardProps = {
+type TopStatProps = {
   title: string;
   value: string | number;
-  description?: string;
-  noBorder?: boolean;
+  /** 是否在前面渲染分隔竖线 (除第一项以外都是 true) */
+  divider?: boolean;
 };
 
-// 仪表盘顶部小数据块:
-//  - 标签 = eyebrow (衬线斜体小型大写, 杂志栏目名感)
-//  - 数值 = Fraunces 大号粗体 + tabular nums (印刷数字感)
-const TopCard: React.FC<TopCardProps> = React.memo(
-  ({ title, value, description, noBorder }) => {
+// 单行 inline 的 stat: 「LABEL value」紧贴, 项间靠 flex gap + 细竖线分隔
+//  - LABEL: 衬线斜体小型大写 (eyebrow), 暗色一档
+//  - value: mono tabular, 主文字色
+const TopStat: React.FC<TopStatProps> = React.memo(
+  ({ title, value, divider }) => {
     return (
-      <div
-        className={`min-w-0 w-full ${noBorder ? "first:pl-0" : "pl-6"}`}
-      >
-        <Flex direction="column" gap="2">
-          <span className="eyebrow">{title}</span>
-          {/* whitespace-pre-line: 让数据中的 \n 渲染成真正换行 (Traffic / Network Speed 用)
-              tight leading + 略小 font-size: 即使是单行数字也不会被挤换行 */}
+      <div className="inline-flex items-baseline gap-3 whitespace-nowrap">
+        {divider && (
           <span
-            className="font-tabular whitespace-pre-line leading-tight break-keep"
-            style={{
-              color: "var(--ink)",
-              fontFamily: "var(--font-serif)",
-              fontWeight: 600,
-              fontSize: "clamp(0.95rem, 1.6vw, 1.2rem)",
-              fontVariationSettings: '"opsz" 144',
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {value}
-          </span>
-          {description && (
-            <Text size="1" style={{ color: "var(--ink-mute)" }}>
-              {description}
-            </Text>
-          )}
-        </Flex>
+            aria-hidden
+            className="self-center inline-block h-3 w-px"
+            style={{ background: "var(--ink-line-soft)" }}
+          />
+        )}
+        <span className="eyebrow" style={{ fontSize: "0.66rem" }}>
+          {title}
+        </span>
+        <span
+          className="font-mono font-tabular"
+          style={{
+            color: "var(--ink)",
+            fontWeight: 500,
+            fontSize: "0.82rem",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {value}
+        </span>
       </div>
     );
   },

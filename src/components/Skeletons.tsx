@@ -1,23 +1,20 @@
 // 骨架屏组件: 替代加载转圈, 减少白屏闪烁感
 // 结构尽量贴近真实组件, 让数据到位时无视觉跳变
 
-// 顶部状态格骨架 (Index summary card 内部, 5 列)
+// 顶部 ticker 单格骨架: label + value 紧贴
 export const TopCardSkeleton = () => (
-  <div className="min-w-0 w-full flex flex-col gap-2 py-1">
+  <div className="inline-flex items-baseline gap-3 whitespace-nowrap">
+    <div className="skeleton h-2 w-12" />
     <div className="skeleton h-3 w-20" />
-    <div className="skeleton h-5 w-28" />
   </div>
 );
 
-// 顶部整行 5 列骨架, 配合 .summary-card 纸卡外壳
+// 顶部 ticker 单行骨架 (4 项, currentTime 已移除)
 export const SummaryCardSkeleton = () => (
-  <div className="summary-card paper-card no-tilt p-6 mt-4">
-    <div className="skeleton h-3 w-32 mb-4" />
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-4 divide-x divide-[var(--ink-line-soft)]">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className={i === 0 ? "first:pl-0" : "pl-6"}>
-          <TopCardSkeleton />
-        </div>
+  <div className="summary-card paper-card no-tilt mt-4 px-4 py-2 overflow-x-auto scrollbar-hidden">
+    <div className="flex items-baseline gap-x-4 whitespace-nowrap">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <TopCardSkeleton key={i} />
       ))}
     </div>
   </div>
