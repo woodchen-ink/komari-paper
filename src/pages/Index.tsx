@@ -79,10 +79,11 @@ const Index = () => {
       {
         key: "trafficOverview",
         title: t("traffic_overview"),
+        // 拆成两行 (上传 / 下载), 避免在窄 5 列布局下被挤换行
         getValue: () => {
           const data = live_data?.data?.data;
           const online = live_data?.data?.online;
-          if (!data || !online) return "↑ 0B / ↓ 0B";
+          if (!data || !online) return "↑ 0 B\n↓ 0 B";
           const onlineSet = new Set(online);
           const values = Object.entries(data)
             .filter(([uuid]) => onlineSet.has(uuid))
@@ -95,7 +96,7 @@ const Index = () => {
             (acc, node) => acc + (node.network.totalDown || 0),
             0,
           );
-          return `↑ ${formatBytes(up)} / ↓ ${formatBytes(down)}`;
+          return `↑ ${formatBytes(up)}\n↓ ${formatBytes(down)}`;
         },
       },
       {
@@ -104,7 +105,7 @@ const Index = () => {
         getValue: () => {
           const data = live_data?.data?.data;
           const online = live_data?.data?.online;
-          if (!data || !online) return "↑ 0 B/s / ↓ 0 B/s";
+          if (!data || !online) return "↑ 0 B/s\n↓ 0 B/s";
           const onlineSet = new Set(online);
           const values = Object.entries(data)
             .filter(([uuid]) => onlineSet.has(uuid))
@@ -117,7 +118,7 @@ const Index = () => {
             (acc, node) => acc + (node.network.down || 0),
             0,
           );
-          return `↑ ${formatSpeed(up)} / ↓ ${formatSpeed(down)}`;
+          return `↑ ${formatSpeed(up)}\n↓ ${formatSpeed(down)}`;
         },
       },
     ];
@@ -194,13 +195,15 @@ const TopCard: React.FC<TopCardProps> = React.memo(
       >
         <Flex direction="column" gap="2">
           <span className="eyebrow">{title}</span>
+          {/* whitespace-pre-line: 让数据中的 \n 渲染成真正换行 (Traffic / Network Speed 用)
+              tight leading + 略小 font-size: 即使是单行数字也不会被挤换行 */}
           <span
-            className="font-tabular leading-none"
+            className="font-tabular whitespace-pre-line leading-tight break-keep"
             style={{
               color: "var(--ink)",
               fontFamily: "var(--font-serif)",
               fontWeight: 600,
-              fontSize: "clamp(1.05rem, 2.2vw, 1.4rem)",
+              fontSize: "clamp(0.95rem, 1.6vw, 1.2rem)",
               fontVariationSettings: '"opsz" 144',
               letterSpacing: "-0.02em",
             }}
