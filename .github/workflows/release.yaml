@@ -1,0 +1,148 @@
+name: Build Theme Package & Auto Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write # 创建 Release / 上传 asset
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0      # 取全量历史以便生成自动 changelog
+          ref: ${{ github.ref }} # 显式跟踪当前分支, 便于回写 commit
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Compute version metadata
+        id: meta
+        run: |
+          VERSION_DATE=$(date +"%y.%m.%d")    # 日期版本, 例: 26.05.03
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          BASE_TAG="v${VERSION_DATE}"
+
+          # 同一天多次发布时附加 -2/-3... 序号, 保证 tag 唯一且仍是正式版
+          git fetch --tags --force --quiet || true
+          SUFFIX=""
+          INDEX=1
+          CANDIDATE_TAG="${BASE_TAG}"
+          while git rev-parse -q --verify "refs/tags/${CANDIDATE_TAG}" >/dev/null; do
+            INDEX=$((INDEX + 1))
+            CANDIDATE_TAG="${BASE_TAG}-${INDEX}"
+          done
+          TAG="${CANDIDATE_TAG}"
+          if [ "${INDEX}" -gt 1 ]; then
+            SUFFIX="-${INDEX}"
+          fi
+
+          # 写入 komari-theme.json 的 version 字段, 保持 SemVer 风格的点号
+          VERSION="${VERSION_DATE}${SUFFIX}"
+          ZIP_NAME="komari-paper-${TAG}.zip"
+
+          echo "VERSION_DATE=${VERSION_DATE}" >> "$GITHUB_ENV"
+          echo "COMMIT_HASH=${COMMIT_HASH}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Inject version into komari-theme.json
+        run: |
+          jq --arg version "$VERSION" \
+             '.version = $version' \
+             komari-theme.json > komari-theme-updated.json
+          mv komari-theme-updated.json komari-theme.json
+          echo "Theme manifest:"
+          cat komari-theme.json
+
+      - name: Commit version bump back to repo
+        # 把更新后的 komari-theme.json 写回 main 分支; commit message 带 [skip ci] 避免递归触发本 workflow
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet komari-theme.json; then
+            echo "komari-theme.json unchanged, skip commit"
+            exit 0
+          fi
+          git add komari-theme.json
+          git commit -m "chore(release): bump theme version to ${VERSION} [skip ci]"
+          git push origin HEAD:refs/heads/main
+
+      - name: Verify required files
+        run: |
+          test -f preview.png       || (echo "preview.png missing" && exit 1)
+          test -f komari-theme.json || (echo "komari-theme.json missing" && exit 1)
+          test -d dist              || (echo "dist/ missing" && exit 1)
+
+      - name: Assemble theme package
+        run: |
+          mkdir -p theme-package
+          cp preview.png theme-package/
+          cp komari-theme.json theme-package/
+          cp -r dist theme-package/
+          (cd theme-package && zip -r "../${ZIP_NAME}" .)
+          ls -la "${ZIP_NAME}"
+
+      - name: Upload artifact (always available)
+        uses: actions/upload-artifact@v4
+        with:
+          name: komari-paper-${{ github.sha }}
+          path: komari-paper-*.zip
+          retention-days: 90
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # 找到上一个发布 tag, 用于聚合本次 Release 的提交列表
+          PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | grep -v "^${TAG}$" | head -n 1 || true)
+          {
+            echo "## Komari Paper ${TAG}"
+            echo ""
+            echo "**Commit**: \`${COMMIT_HASH}\` · **Build**: $(date -u +"%Y-%m-%d %H:%M UTC")"
+            echo ""
+            echo "### Changes"
+            if [ -n "${PREV_TAG}" ]; then
+              git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%an)" --no-merges
+            else
+              git log -1 --pretty=format:"- %s (%an)"
+            fi
+            echo ""
+            echo ""
+            echo "### Install"
+            echo ""
+            echo "Download \`${ZIP_NAME}\` below and upload it on Komari admin → Theme Management."
+          } > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
+      - name: Create / update Release with asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Komari Paper ${{ steps.meta.outputs.tag }}
+          body_path: RELEASE_NOTES.md
+          files: komari-paper-*.zip
+          prerelease: false
+          make_latest: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

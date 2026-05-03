@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+    <meta name="description" content="A simple server monitor tool." />
+    <meta
+      name="keywords"
+      content="server monitor, Komari Monitor, server uptime monitoring, real-time server status, server performance dashboard, monitoring tool"
+    />
+    <meta name="author" content="Akizon77" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- PWA Configuration: Editorial Paper, theme-color 用暖白纸色 -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#f4efe6" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Komari Monitor" />
+    <link rel="apple-touch-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon.ico" />
+    
+    <meta property="og:title" content="Komari Monitor" />
+    <meta property="og:description" content="A simple server monitor tool." />
+    <!-- <meta property="og:image" content="/images/komari-preview.png" /> -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Komari Monitor" />
+    <meta name="twitter:description" content="A simple server monitor tool." />
+    <!-- <meta name="twitter:image" content="/images/komari-preview.png" /> -->
+    <title>Komari Monitor</title>
+
+    <!--
+      Pre-React 骨架样式: JS 加载/解析前显示与最终页面同形的纸卡骨架,
+      米黄纸张色 + 棕色手画描边. React mount 后自动隐藏.
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #f4efe6;
+      }
+      #initial-skeleton {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        font-family: "Kalam", "LXGW WenKai", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      .pre-skel {
+        position: relative;
+        overflow: hidden;
+        background: rgba(42, 38, 34, 0.10);
+        border-radius: 1px;
+        isolation: isolate;
+      }
+      .pre-skel::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(255, 247, 217, 0.45) 50%,
+          transparent 100%
+        );
+        transform: translateX(-100%);
+        animation: pre-shimmer 1.6s ease-in-out infinite;
+      }
+      @keyframes pre-shimmer {
+        100% {
+          transform: translateX(100%);
+        }
+      }
+      /* 纸卡: 米白底 + 软描边 + 双层阴影 (Editorial) */
+      .pre-glass {
+        background: #fbf7ee;
+        border: 1px solid rgba(42, 38, 34, 0.22);
+        border-radius: 2px 3px 2px 3px;
+        box-shadow:
+          1px 1px 0 0 rgba(42, 38, 34, 0.18),
+          0 8px 24px -8px rgba(42, 38, 34, 0.18);
+        width: 100%;
+      }
+      .pre-row {
+        display: grid;
+        gap: 0.5rem;
+      }
+      /* React 接管后隐藏占位; #root 有内容时即移除 */
+      #root:not(:empty) ~ #initial-skeleton {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- 首屏骨架: 在 main.tsx 加载/执行前显示, React mount 后自动隐藏 -->
+    <div id="initial-skeleton" aria-hidden="true">
+      <div style="width: 100%; max-width: 64rem; padding: 0 1rem; display: flex; flex-direction: column; gap: 1rem;">
+        <!-- nav -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; max-height: 4rem;">
+          <div class="pre-skel" style="height: 1.75rem; width: 10rem;"></div>
+          <div style="display: flex; gap: 0.5rem;">
+            <div class="pre-skel" style="height: 2rem; width: 2rem; border-radius: 9999px;"></div>
+            <div class="pre-skel" style="height: 2rem; width: 4rem; border-radius: 9999px;"></div>
+          </div>
+        </div>
+        <!-- summary 5 列 -->
+        <div class="pre-glass" style="padding: 1rem;">
+          <div class="pre-row" style="grid-template-columns: repeat(5, 1fr);">
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div class="pre-skel" style="height: 0.75rem; width: 5rem;"></div>
+              <div class="pre-skel" style="height: 1.25rem; width: 7rem;"></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div class="pre-skel" style="height: 0.75rem; width: 5rem;"></div>
+              <div class="pre-skel" style="height: 1.25rem; width: 7rem;"></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div class="pre-skel" style="height: 0.75rem; width: 5rem;"></div>
+              <div class="pre-skel" style="height: 1.25rem; width: 7rem;"></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div class="pre-skel" style="height: 0.75rem; width: 5rem;"></div>
+              <div class="pre-skel" style="height: 1.25rem; width: 7rem;"></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div class="pre-skel" style="height: 0.75rem; width: 5rem;"></div>
+              <div class="pre-skel" style="height: 1.25rem; width: 7rem;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- 节点骨架 x 3 -->
+        <div class="pre-glass" style="padding: 1rem; height: 11rem;"></div>
+        <div class="pre-glass" style="padding: 1rem; height: 11rem;"></div>
+        <div class="pre-glass" style="padding: 1rem; height: 11rem;"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,599 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ==============================================
+ * 纸 + 手写主题 (Editorial Paper)
+ *
+ * 设计语言参考: Stripe Press / Maggie Appleton / Are.na
+ * 核心反差: 衬线印刷骨架 + 极克制的手写批注 + 单色系 + 等宽数字
+ *   - 标题/正文: Fraunces (serif, 老书印刷感)
+ *   - 中文: LXGW WenKai (霞鹜文楷, 笔锋有手写顿挫但工整)
+ *   - 手写批注 (仅用于角标/日期/标签): Caveat
+ *   - 数字 / 等宽: JetBrains Mono (机器精度)
+ *
+ * 不要全部用手写体, 那样廉价. 衬线骨架才显设计感.
+ * ============================================== */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Caveat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css");
+
+/* 单一纸质主题, 不再支持暗色; @custom-variant 保留为 no-op 以兼容 shadcn 组件 dark: 前缀 */
+@custom-variant dark (&:is(.never-active *));
+
+@theme inline {
+  --color-accent-1: var(--accent-1);
+  --color-accent-2: var(--accent-2);
+  --color-accent-3: var(--accent-3);
+  --color-accent-4: var(--accent-4);
+  --color-accent-5: var(--accent-5);
+  --color-accent-6: var(--accent-6);
+  --color-accent-7: var(--accent-7);
+  --color-accent-8: var(--accent-8);
+  --color-accent-9: var(--accent-9);
+  --color-accent-10: var(--accent-10);
+  --color-accent-11: var(--accent-11);
+  --color-accent-12: var(--accent-12);
+  --color-accent-a1: var(--accent-a1);
+  --color-accent-a2: var(--accent-a2);
+  --color-accent-a3: var(--accent-a3);
+  --color-accent-a4: var(--accent-a4);
+  --color-accent-a5: var(--accent-a5);
+  --color-accent-a6: var(--accent-a6);
+  --color-accent-a7: var(--accent-a7);
+  --color-accent-a8: var(--accent-a8);
+  --color-accent-a9: var(--accent-a9);
+  --color-accent-a10: var(--accent-a10);
+  --color-accent-a11: var(--accent-a11);
+  --color-accent-a12: var(--accent-a12);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* 编辑感纸张设计令牌 ----------------------------------------
+ *
+ * 配色原则: 暖灰白主纸 + 冷灰白卡片对比, 文字用暖灰黑而非纯墨,
+ *           批注色只用红铅笔, 不堆多色. 胶带 / 装饰物高度克制.
+ * ----------------------------------------------------------- */
+:root {
+  --radius: 0.25rem;
+
+  /* 纸色 — 暖白基底, 微微偏黄, 不是过饱和米黄 */
+  --paper: #f4efe6;             /* 主纸张 (暖白, Stripe Press / Are.na 取色感) */
+  --paper-soft: #ebe4d4;        /* 略深一档, 用作 hover / 内嵌格子 */
+  --paper-card: #fbf7ee;        /* 卡片本体 (近米白) */
+  --paper-edge: #d9cfb7;        /* 纸边阴影 */
+  --paper-cool: #ebe9e1;        /* 冷调灰白, 用于侧栏 / 二级面板, 与主纸对比 */
+
+  /* 文字 — 暖灰黑系, 不用纯黑 */
+  --ink: #2a2622;               /* 主文字 (暖灰黑) */
+  --ink-soft: #4d463d;          /* 次要文字 */
+  --ink-mute: #7c7062;          /* 三级 / 时间戳 */
+  --ink-line: #2a2622;          /* 边框 (用主文字色, 高对比) */
+  --ink-line-soft: rgba(42, 38, 34, 0.22); /* 弱描边 / 内分隔 */
+
+  /* 批注笔 — 只用红蓝铅笔, 数据色另立 */
+  --pen-red: #b8331b;           /* 红铅笔 (批注 / 错误 / 离线) */
+  --pen-blue: #1f4a7a;          /* 蓝铅笔 (链接 / 引用) */
+  --rule-line: rgba(42, 38, 34, 0.10); /* 笔记本横线, 极淡 */
+  --margin-line: #c33a1f;       /* 红色装订竖线 (实色, 是设计元素而不是装饰) */
+  --highlight: #f3e58a;          /* 荧光笔黄 */
+
+  /* 数据色 — 冷静一些, 与纸面同频 */
+  --data-1: #1f4a7a;            /* 深蓝 */
+  --data-2: #4d6a2e;            /* 苔绿 */
+  --data-3: #9a6614;            /* 赭黄 */
+  --data-4: #6a3a7a;            /* 紫 */
+  --data-5: #b8331b;            /* 朱红 */
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper-card);
+  --card-foreground: var(--ink);
+  --popover: var(--paper-card);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper-card);
+  --secondary: var(--paper-soft);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-soft);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--highlight);
+  --accent-foreground: var(--ink);
+  --destructive: var(--pen-red);
+  --border: var(--ink-line-soft);
+  --input: var(--ink-line);
+  --brand: var(--pen-red);
+  --ring: var(--pen-red);
+  --chart-1: var(--data-1);
+  --chart-2: var(--data-2);
+  --chart-3: var(--data-3);
+  --chart-4: var(--data-4);
+  --chart-5: var(--data-5);
+  --sidebar: var(--paper-cool);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--ink);
+  --sidebar-primary-foreground: var(--paper-card);
+  --sidebar-accent: var(--highlight);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--ink-line-soft);
+  --sidebar-ring: var(--pen-red);
+}
+
+/* (单一纸质主题, 不再有暗色变体) */
+
+/* ==============================================
+ * 字体栈 (Editorial Paper)
+ *
+ * 反差是关键: 主体走衬线印刷, 手写体只用于"批注/标签/页码"
+ * - serif (主标题/正文): Fraunces 衬线 + 中文霞鹜文楷
+ * - hand (批注/角标): Caveat, 极少量使用
+ * - mono (数字/数据): JetBrains Mono, 让数字"机器精确"
+ * ============================================== */
+:root {
+  --font-serif: "Fraunces", "LXGW WenKai", "霞鹜文楷", Georgia, "Times New Roman", serif;
+  --font-sans: "Fraunces", "LXGW WenKai", "霞鹜文楷", Georgia, serif; /* 项目里 sans 也走衬线 */
+  --font-hand: "Caveat", "LXGW WenKai", "霞鹜文楷", cursive;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-data: var(--font-mono); /* 旧别名, 兼容现有引用 */
+}
+
+/* ==============================================
+ * 全局基础样式
+ * - 主纸面只放极淡 SVG 噪点; 不放横线 (横线 = 作业本廉价感)
+ * - 装订线移到 main 容器内, 作为版式元素 (在 _layout 通过 .editorial-margin 实现)
+ * - 标题衬线印刷, 数字等宽, 仅 .font-hand 走 Caveat
+ * ============================================== */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html, body {
+    font-family: var(--font-serif);
+    color: var(--ink);
+    font-feature-settings: "kern", "liga", "calt", "ss01";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html { background: var(--paper); }
+  body {
+    @apply bg-background text-foreground;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16   0 0 0 0 0.14   0 0 0 0 0.12   0 0 0 0.32 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
+    background-size: 200px 200px;
+    background-attachment: fixed;
+    background-blend-mode: multiply;
+    min-height: 100vh;
+  }
+
+  /* 标题: 衬线印刷; H1 略加 optical sizing */
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  h1 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variation-settings: "opsz" 96, "SOFT" 0, "WONK" 1;
+  }
+  h2 { font-variation-settings: "opsz" 48; }
+
+  /* 等宽数字 + 表格、代码 */
+  .font-mono, code, kbd, pre, samp,
+  .recharts-cartesian-axis-tick text {
+    font-family: var(--font-mono) !important;
+    font-feature-settings: "tnum", "zero";
+    letter-spacing: -0.02em;
+  }
+
+  /* 默认 oldstyle 数字 (像旧书印刷); 表格 / 数据用 tabular */
+  body { font-variant-numeric: oldstyle-nums proportional-nums; }
+  .font-tabular, .recharts-cartesian-axis-tick text, .font-mono, code, .nums {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* 手写批注: 仅在主动加 .font-hand 的元素上启用 */
+  .font-hand {
+    font-family: var(--font-hand) !important;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+}
+
+/* ==============================================
+ * 滚动条: 极细暖灰
+ * ============================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(42, 38, 34, 0.28);
+  border-radius: 1px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-button { display: none; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+body, * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 38, 34, 0.28) transparent;
+}
+
+/* ==============================================
+ * 纸卡 (Editorial Paper)
+ *
+ * 设计要点:
+ *   - 几乎方角 (border-radius 2-3px), 不再追求手撕大圆角
+ *   - 双层阴影: 1px 硬偏移 (纸厚) + 12px 大柔影 (悬浮于纸面)
+ *   - 1px 实线边框, 用主文字色 22% 透明 (软描边)
+ *   - 默认带 --tilt 旋转量, 各卡片用 nth-child 取不同角度
+ *   - hover 旋转回正 + 轻微抬升
+ * ============================================== */
+.paper-card {
+  --tilt: 0deg;
+  position: relative;
+  background-color: var(--card);
+  color: var(--ink);
+  border-radius: 2px 3px 2px 3px;
+  border: 1px solid var(--ink-line-soft);
+  box-shadow:
+    1px 1px 0 0 rgba(42, 38, 34, 0.18),
+    0 8px 24px -8px rgba(42, 38, 34, 0.18),
+    0 1px 2px rgba(42, 38, 34, 0.05);
+  transform: rotate(var(--tilt));
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 0.35s ease;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16   0 0 0 0 0.14   0 0 0 0 0.12   0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
+  background-size: 180px 180px;
+  background-blend-mode: multiply;
+}
+
+.paper-card:hover {
+  transform: rotate(0deg) translateY(-2px);
+  box-shadow:
+    1px 1px 0 0 rgba(42, 38, 34, 0.22),
+    0 14px 30px -10px rgba(42, 38, 34, 0.22),
+    0 1px 2px rgba(42, 38, 34, 0.06);
+}
+
+/* 每张卡轻微独立旋转 — 用无理数角度避免对称感.
+ * 通过 nth-child 派出 6 种状态; 配合 NodeGrid 的 6+ 张卡循环.
+ * 注: 父容器需要 display: flex/grid 等让 nth-child 生效 (节点列表是 flex-col, OK). */
+.paper-card:nth-child(6n+1) { --tilt: -0.6deg; }
+.paper-card:nth-child(6n+2) { --tilt:  0.4deg; }
+.paper-card:nth-child(6n+3) { --tilt: -0.25deg; }
+.paper-card:nth-child(6n+4) { --tilt:  0.55deg; }
+.paper-card:nth-child(6n+5) { --tilt: -0.45deg; }
+.paper-card:nth-child(6n+6) { --tilt:  0.2deg; }
+
+/* 工具类: 强制不旋转 (用于 summary card / instance header 等不该歪的卡) */
+.paper-card.no-tilt,
+.paper-card.no-tilt:hover { transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .paper-card,
+  .paper-card:hover { transition: none; transform: none; }
+}
+
+/* 纸条: NavBar / Footer / 不可旋转的容器 */
+.paper-strip {
+  position: relative;
+  background: var(--paper-card);
+  color: var(--ink);
+  border: 1px solid var(--ink-line-soft);
+  border-radius: 2px;
+  box-shadow:
+    1px 1px 0 0 rgba(42, 38, 34, 0.12),
+    0 6px 18px -10px rgba(42, 38, 34, 0.18);
+}
+
+/* ==============================================
+ * 顶部 summary / 节点卡 / 详情页文字色:
+ * 全部反转回墨色, 移除原玻璃主题的"白字 + 黑阴影"
+ * ============================================== */
+.summary-card, .summary-card *,
+.node-card, .node-card *,
+.instance-page, .instance-page * {
+  color: var(--ink);
+  text-shadow: none !important;
+}
+
+.summary-card .text-muted-foreground,
+.summary-card [class*="text-muted-foreground"],
+.node-card .text-muted-foreground,
+.node-card [class*="text-muted-foreground"],
+.instance-page .text-muted-foreground,
+.instance-page [class*="text-muted-foreground"] {
+  color: var(--ink-soft) !important;
+}
+
+/* 节点卡内嵌的小模块格 (CPU / 内存 / 存储 ...): 冷调副纸 */
+.node-card .bg-muted\/60 {
+  background: var(--paper-cool) !important;
+  border-color: var(--ink-line-soft) !important;
+  border-radius: 2px !important;
+}
+.node-card .border-border {
+  border-color: var(--ink-line-soft) !important;
+}
+
+/* ==============================================
+ * Radix SegmentedControl: 极简方框, 印刷感
+ * ============================================== */
+.rt-SegmentedControlRoot {
+  background: var(--paper-cool) !important;
+  border: 1px solid var(--ink-line-soft) !important;
+  border-radius: 2px !important;
+  box-shadow: 1px 1px 0 0 rgba(42, 38, 34, 0.12);
+  font-family: var(--font-serif);
+}
+.rt-SegmentedControlIndicator::before {
+  background: var(--ink) !important;
+  border-radius: 1px !important;
+}
+.rt-SegmentedControlItem[data-state="on"] *,
+.rt-SegmentedControlItem[data-state="on"] .rt-SegmentedControlItemLabel,
+.rt-SegmentedControlItem[data-state="on"] .rt-SegmentedControlItemLabelActive {
+  color: var(--card) !important;
+}
+
+/* ==============================================
+ * Recharts: 极淡虚线网格 + 冷灰坐标 + 等宽数字
+ * ============================================== */
+.instance-page .recharts-cartesian-axis-tick text,
+.instance-page .recharts-cartesian-axis-tick tspan {
+  fill: var(--ink-mute) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px;
+}
+.instance-page .recharts-cartesian-grid line {
+  stroke: var(--ink-line-soft) !important;
+  stroke-dasharray: 2 4;
+}
+.instance-page .recharts-tooltip-cursor {
+  stroke: var(--ink) !important;
+  stroke-dasharray: 3 3;
+  stroke-width: 1px;
+}
+.instance-page .recharts-legend-item-text {
+  color: var(--ink) !important;
+  fill: var(--ink) !important;
+  font-family: var(--font-serif) !important;
+}
+
+/* tooltip: 极简白卡 */
+.instance-page .recharts-tooltip-wrapper > div,
+.instance-page .recharts-default-tooltip {
+  background: var(--card) !important;
+  border: 1px solid var(--ink-line) !important;
+  border-radius: 2px !important;
+  color: var(--ink) !important;
+  box-shadow:
+    1px 1px 0 0 rgba(42, 38, 34, 0.18),
+    0 8px 20px -8px rgba(42, 38, 34, 0.18) !important;
+  font-family: var(--font-serif) !important;
+  padding: 8px 12px !important;
+}
+.instance-page .recharts-tooltip-wrapper * {
+  color: var(--ink) !important;
+}
+.instance-page .recharts-tooltip-wrapper .text-muted-foreground,
+.instance-page .recharts-tooltip-wrapper [class*="text-muted-foreground"] {
+  color: var(--ink-mute) !important;
+}
+
+/* 折线: 干净细实线, 不再加墨晕 */
+.instance-page .recharts-line .recharts-line-curve {
+  stroke-width: 1.5px !important;
+}
+
+/* 详情页侧边列表 hover/active: 极简, 选中态用左侧红铅笔条 */
+.instance-page .instance-sidebar-item {
+  border-radius: 1px;
+}
+.instance-page .instance-sidebar-item:hover {
+  background: var(--paper-soft) !important;
+}
+.instance-page .instance-sidebar-item.active {
+  background: transparent !important;
+  box-shadow: inset 3px 0 0 var(--pen-red);
+}
+
+/* ==============================================
+ * 离线节点: 红笔批注感, 不再用脉冲光晕
+ * ============================================== */
+.pulse-animation {
+  animation: ink-pulse 2s ease-in-out infinite;
+}
+@keyframes ink-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.92); }
+}
+
+/* 渐变动画类 (保留以兼容旧引用, 不再驱动玻璃背景) */
+@keyframes gradient-shift {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(2%, 1%); }
+}
+.animate-gradient-shift,
+.animate-gradient-shift-reverse {
+  animation: gradient-shift 30s ease-in-out infinite;
+  opacity: 0;
+}
+
+/* ==============================================
+ * 骨架屏: 极简灰块 + 慢速横扫
+ * ============================================== */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(42, 38, 34, 0.10);
+  border-radius: 1px;
+  isolation: isolate;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 252, 244, 0.6) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
+}
+
+/* ==============================================
+ * Editorial 装饰元素 (克制使用, 只在显式标注的地方出现)
+ * ============================================== */
+
+/* Eyebrow label: 章节小标题, 全大写 + 衬线斜体 + 字间距, 像杂志栏目名 */
+.eyebrow {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+/* Drop cap: 段首大字母 (装饰文章引言用), 衬线粗体 */
+.drop-cap::first-letter {
+  font-family: var(--font-serif);
+  font-weight: 900;
+  font-size: 3.6em;
+  line-height: 0.85;
+  float: left;
+  margin: 0.05em 0.08em 0 -0.04em;
+  color: var(--ink);
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+}
+
+/* Editorial rule: 极细水平细线, 用于章节分割 */
+.editorial-rule {
+  display: block;
+  height: 1px;
+  background: var(--ink-line-soft);
+  border: none;
+  margin: 1.5rem 0;
+}
+.editorial-rule.thick { height: 2px; background: var(--ink); }
+
+/* 红墨竖线: 用作版式装饰 (装订线 / 强调段落左边线) */
+.editorial-margin {
+  position: relative;
+}
+.editorial-margin::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1.25rem;
+  width: 1px;
+  background: var(--margin-line);
+  opacity: 0.7;
+}
+
+/* 角章: 卡片右上角的红色编号 / 印章, 配合 data-stamp 属性 */
+.corner-stamp {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--pen-red);
+  background: var(--paper-card);
+  border: 1.5px solid var(--pen-red);
+  border-radius: 50%;
+  transform: rotate(-12deg);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 红墨水手写下划 (波浪) */
+.hand-underline {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--pen-red);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+/* 荧光笔高亮 */
+.hand-highlight {
+  background: linear-gradient(
+    180deg,
+    transparent 55%,
+    var(--highlight) 55%,
+    var(--highlight) 92%,
+    transparent 92%
+  );
+  padding: 0 2px;
+}
+
+/* 链接: 极简下划线, hover 红铅笔色 */
+a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--ink-line-soft);
+  text-underline-offset: 3px;
+  transition: color 0.2s, text-decoration-color 0.2s;
+}
+a:hover {
+  color: var(--pen-red);
+  text-decoration-color: var(--pen-red);
+}
