@@ -343,7 +343,7 @@ const PingChart = ({ uuid }: { uuid: string }) => {
     <Flex
       direction="column"
       align="center"
-      gap="4"
+      gap="2"
       className="w-full max-w-screen"
     >
       <div className="w-full overflow-x-auto px-2">
@@ -373,7 +373,7 @@ const PingChart = ({ uuid }: { uuid: string }) => {
 
       {loading && !remoteData && (
         <div className="w-full">
-          <ChartSkeleton height={320} />
+          <ChartSkeleton height={240} />
         </div>
       )}
       {error && (
@@ -382,25 +382,25 @@ const PingChart = ({ uuid }: { uuid: string }) => {
         </div>
       )}
       {latestValues.length > 0 ? (
-        <div className="paper-card p-4 w-full mb-2 relative">
-          <Tips className="absolute top-0 right-0 m-2">
+        <div className="paper-card p-3 w-full relative">
+          <Tips className="absolute top-1 right-1">
             <label>{t("chart.loss_tips")}</label>
           </Tips>
           <div
-            className="grid gap-2 mb-2 w-full"
+            className="grid gap-x-3 gap-y-1 w-full"
             style={{
-              gridTemplateColumns: `repeat(auto-fit, minmax(240px,1fr))`,
+              gridTemplateColumns: `repeat(auto-fit, minmax(200px,1fr))`,
             }}
           >
             {latestValues.map((task) => (
               <div key={task.id} className="flex flex-row items-center rounded">
                 <div
-                  className="w-1 h-6 rounded-xs "
+                  className="w-1 h-5 rounded-xs shrink-0"
                   style={{ backgroundColor: task.color }}
                 />
-                <div className="flex items-start justify-center ml-1 flex-col">
-                  <div className="flex items-center gap-1 -mb-1">
-                    <label className="font-bold text-md">{task.name}</label>
+                <div className="flex items-start justify-center ml-1 flex-col min-w-0">
+                  <div className="flex items-center gap-1 leading-tight">
+                    <label className="font-bold text-sm truncate">{task.name}</label>
                     <Tips
                       side="top"
                       trigger={
@@ -516,17 +516,17 @@ const PingChart = ({ uuid }: { uuid: string }) => {
                       </div>
                     </Tips>
                   </div>
-                  <div className="flex gap-2 text-sm text-muted-foreground">
-                    <span>
+                  <div className="flex gap-2 text-xs text-muted-foreground leading-tight">
+                    <span className="font-mono">
                       {task.value !== null
                         ? `${Number(task.value).toFixed(0)} ms`
                         : "-"}
                     </span>
-                    <span>
+                    <span className="font-mono">
                       {`${Number(task.loss).toFixed(1)}%${t("chart.lossRate")}`}
                     </span>
                     {typeof task.p99_p50_ratio === "number" && (
-                      <span title="p99/p50">
+                      <span title="p99/p50" className="font-mono">
                         {task.p99_p50_ratio.toFixed(1)}
                         {t("chart.volatility")}
                       </span>
@@ -542,17 +542,20 @@ const PingChart = ({ uuid }: { uuid: string }) => {
           {t("common.none")}
         </div>
       )}
-      <div className="paper-card p-4 w-full">
+      <div className="paper-card p-3 w-full">
         {chartData.length === 0 ? (
           <div className="w-full h-40 flex items-center justify-center text-muted-foreground">
             {t("common.none")}
           </div>
         ) : (
-          <ChartContainer config={chartConfig}>
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-[clamp(220px,38vh,360px)] w-full"
+          >
             <LineChart
               data={chartData}
               accessibilityLayer
-              margin={{ top: 0, right: 16, bottom: 0, left: 16 }}
+              margin={{ top: 4, right: 16, bottom: 0, left: 16 }}
             >
               <CartesianGrid vertical={false} />
               <XAxis
@@ -608,7 +611,7 @@ const PingChart = ({ uuid }: { uuid: string }) => {
         )}
         {/* Cut Peak 开关和显示/隐藏所有按钮 */}
         <div
-          className="flex items-center justify-between gap-4"
+          className="flex items-center justify-between gap-4 mt-2 pt-2 border-t border-(--ink-line-soft)"
           style={{ display: loading && !remoteData ? "none" : "flex" }}
         >
           <div className="flex items-center gap-2">
