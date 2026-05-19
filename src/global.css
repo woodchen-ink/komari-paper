@@ -491,6 +491,30 @@ body, * {
 }
 
 /* ==============================================
+ * SplitText: 字符级 stagger 入场
+ *  - char span 默认 opacity:0 + 微下移 + 轻模糊, 落定时清除
+ *  - 节奏: ease-out, 用 fill-mode forwards 保证落定后保持
+ *  - 故意不响应 prefers-reduced-motion: 入场是品牌仪式感, 不属于"重复 / 大幅运动"
+ * ============================================== */
+[data-split-text] .split-text-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.25em);
+  filter: blur(2px);
+  animation-name: split-rise;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: forwards;
+  will-change: opacity, transform, filter;
+}
+@keyframes split-rise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* ==============================================
  * Editorial 装饰元素 (克制使用, 只在显式标注的地方出现)
  * ============================================== */
 

@@ -64,6 +64,10 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `.hand-highlight`: 荧光笔黄背景
 - `.font-hand`: 强制 Caveat (用作批注/便签贴)
 
+#### 动效组件 (手撸, 不引第三方动画库)
+- `src/components/SplitText.tsx`: 字符级 stagger 入场, `Array.from` 拆 codepoint (兼容中文/emoji); 默认 step 35ms / duration 520ms / ease-out cubic + 微下移 + 2px blur; `[data-split-text] .split-text-char` keyframe 在 `global.css` 定义, `prefers-reduced-motion` 自动停。**只用于首屏封面感**: NavBar 站名 / 详情页 H1 服务器名
+- `src/components/CountUp.tsx`: `requestAnimationFrame` + ease-out cubic 数字滚动, 600ms; 接收 `string | number`, 仅滚动第一段整数 (前后缀如 ` / 10` 原样穿过); `currentRef` 兜底动画中断; reduced-motion 直显; 用于首页 Summary "currentOnline" / "regionOverview" 等纯整数项, 不用于带单位/方向箭头的传输量
+
 #### 关键组件
 - `src/components/DynamicBackground.tsx`: 极简, 仅渲染极淡 vignette + 用户自定义背景图 (sepia + multiply 半透明叠层, "夹照片"风格); 不再画咖啡渍 / 墨点
 - `src/components/Node.tsx`: 6 宫格节点卡 (`paper-card + node-card`)
@@ -79,15 +83,17 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/components/UsageBar.tsx`: 极简方块条 (4-5px 高), 红/橙/墨色阈值; label 用 eyebrow 样式
 - `src/components/NavBar.tsx`: 站点名 Fraunces 大号粗体 (opsz 144, WONK 1) + 副标 Caveat "— monitor" 微旋红色
 - `src/pages/_layout.tsx`: 仅挂 `DynamicBackground` + `SmoothScroll`, **`LiquidGlassEffect` 已删除**
-- `src/pages/Index.tsx`: Summary 卡是 `.no-tilt` + `.eyebrow` 章节标题 + 5 列 stat block (Fraunces 数值 + 极细分隔线)
+- `src/pages/Index.tsx`: Summary 卡是 `.no-tilt` + `.eyebrow` 章节标题 + 4 列 ticker (Fraunces 数值 + 极细竖线分隔); 纯整数值 (`currentOnline` / `regionOverview`) 走 `CountUp`, 带 ↑↓/单位的传输/速率原样渲染
+- `src/components/NavBar.tsx`: 站名走 `SplitText` 字符级入场, 副标 Caveat "— monitor" 静态保持
 - `src/pages/instance/index.tsx`:
   - 侧栏: `.no-tilt` 纸卡; 顶部 `eyebrow Index` + Fraunces "Servers"; 分组用 `.eyebrow` 章节; active 用左侧红铅笔 3px 实线
-  - 主区头卡: `.no-tilt` + `eyebrow Server` + Fraunces 大号 H1 (opsz 144 + WONK + SOFT) + mono UUID
+  - 主区头卡: `.no-tilt` + `eyebrow Server` + Fraunces 大号 H1 (opsz 144 + WONK + SOFT, 走 `SplitText`, `key={node.name}` 切换 server 重跑入场) + mono UUID
 - 图表 (`PingChart`, `LoadChart`):
   - 折线色: 墨水笔色环 (#c23b22 红 / #2c5d8f 蓝 / #5a7a3a 绿 / #b07a1f 黄褐 / #7e4ea2 紫 / ...)
   - 网格: 1px 极淡虚线 (`stroke-dasharray: 2 4`)
   - 折线粗细: 1.5px 干净, 不加墨晕
   - 坐标 / tooltip 数字: JetBrains Mono
+  - **PingChart 高度约束**: `ChartContainer` 必须用 `aspect-auto h-[clamp(220px,38vh,360px)]` 覆盖 shadcn 默认 `aspect-video`, 否则 2k+ 屏图表会撑到 600+px; latestValues 卡 `minmax(200px,1fr)` + `p-3`; 整页 `Flex gap="2"`; cutPeak/showAll 行用 `border-t border-(--ink-line-soft)` 挂在图表底
 
 ### Provider 层级 (src/main.tsx)
 ```

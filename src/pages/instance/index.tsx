@@ -12,6 +12,7 @@ import PingChart from "./PingChart";
 import { DetailsGrid } from "@/components/DetailsGrid";
 import { usePublicInfo } from "@/contexts/PublicInfoContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import SplitText from "@/components/SplitText";
 
 export default function InstancePage() {
   const { t } = useTranslation();
@@ -213,7 +214,11 @@ export default function InstancePage() {
             <div className="eyebrow">Server</div>
             <h1 className="flex items-baseline flex-wrap gap-3 m-0">
               <Flag flag={node?.region ?? ""} />
-              <span
+              <SplitText
+                key={node?.name ?? uuid}
+                text={node?.name ?? uuid ?? ""}
+                step={40}
+                duration={520}
                 style={{
                   fontFamily: "var(--font-serif)",
                   fontWeight: 700,
@@ -222,9 +227,7 @@ export default function InstancePage() {
                   fontVariationSettings: '"opsz" 144, "SOFT" 30, "WONK" 1',
                   lineHeight: 1.1,
                 }}
-              >
-                {node?.name ?? uuid}
-              </span>
+              />
               <span
                 className="font-mono"
                 style={{

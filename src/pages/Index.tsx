@@ -8,6 +8,7 @@ import {
   SummaryCardSkeleton,
   NodeListSkeleton,
 } from "@/components/Skeletons";
+import CountUp from "@/components/CountUp";
 
 // Intelligent speed formatting function
 const formatSpeed = (bytes: number): string => {
@@ -174,11 +175,23 @@ type TopStatProps = {
   divider?: boolean;
 };
 
+// 仅含整数 + 分隔符 ("3", "3 / 10") 的值走 CountUp; 含 ↑↓ / 单位的传输/速率原样渲染
+const isCountable = (value: string | number) => {
+  if (typeof value === "number") return true;
+  return /^-?\d+(\s*\/\s*-?\d+)?$/.test(value.trim());
+};
+
 // 单行 inline 的 stat: 「LABEL value」紧贴, 项间靠 flex gap + 细竖线分隔
 //  - LABEL: 衬线斜体小型大写 (eyebrow), 暗色一档
-//  - value: mono tabular, 主文字色
+//  - value: mono tabular, 主文字色; 数字形式走 CountUp 模拟报表翻页
 const TopStat: React.FC<TopStatProps> = React.memo(
   ({ title, value, divider }) => {
+    const valueStyle: React.CSSProperties = {
+      color: "var(--ink)",
+      fontWeight: 500,
+      fontSize: "0.82rem",
+      letterSpacing: "-0.02em",
+    };
     return (
       <div className="inline-flex items-baseline gap-3 whitespace-nowrap">
         {divider && (
@@ -191,17 +204,15 @@ const TopStat: React.FC<TopStatProps> = React.memo(
         <span className="eyebrow" style={{ fontSize: "0.66rem" }}>
           {title}
         </span>
-        <span
-          className="font-mono font-tabular"
-          style={{
-            color: "var(--ink)",
-            fontWeight: 500,
-            fontSize: "0.82rem",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {value}
-        </span>
+        {isCountable(value) ? (
+          <span className="font-mono font-tabular" style={valueStyle}>
+            <CountUp value={value} duration={600} />
+          </span>
+        ) : (
+          <span className="font-mono font-tabular" style={valueStyle}>
+            {value}
+          </span>
+        )}
       </div>
     );
   },
