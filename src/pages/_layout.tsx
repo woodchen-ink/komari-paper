@@ -4,7 +4,6 @@ import { Outlet } from "react-router-dom";
 import { NodeListProvider } from "@/contexts/NodeListContext";
 import DynamicBackground from "../components/DynamicBackground";
 import SmoothScroll from "../components/SmoothScroll";
-import InstanceModal from "../components/InstanceModal";
 
 // 纸 + 手写主题布局: DynamicBackground 渲染纸面装饰 (vignette + 咖啡渍)
 const IndexLayout = () => {
@@ -20,8 +19,6 @@ const IndexLayout = () => {
           </div>
           <Outlet />
         </main>
-        {/* 节点详情弹窗: 由 /instance/:uuid 路由驱动, 叠加于首页之上 (首页保持挂载) */}
-        <InstanceModal />
       </div>
     );
   };

@@ -82,7 +82,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - GroupPill: 极简文字 tab + active 红铅笔下划 + 衬线 italic
 - `src/components/UsageBar.tsx`: 极简方块条 (4-5px 高), 红/橙/墨色阈值; label 用 eyebrow 样式
 - `src/components/NavBar.tsx`: 站点名 Fraunces 大号粗体 (opsz 144, WONK 1) + 副标 Caveat "— monitor" 微旋红色
-- `src/pages/_layout.tsx`: 挂 `DynamicBackground` + `SmoothScroll` + `Outlet` + `InstanceModal` (详情弹窗常驻于布局, 叠加于首页之上)
+- `src/pages/_layout.tsx`: 挂 `DynamicBackground` + `SmoothScroll` + `Outlet`
 - `src/pages/Index.tsx`: 渲染 `SummaryCards` (汇总卡组) + `NodeDisplay` (节点列表); 旧的单行 ticker 已替换
 - `src/components/SummaryCards.tsx`: 首页顶部汇总卡组 (取代旧 ticker)
   - `eyebrow Overview` 章节标题 + 指标卡网格 (移动 2 列 / 平板 3 列 / 桌面 6 列): 在线节点 (走 `CountUp`) / 内存用量% / 磁盘用量% / 总流量↑↓ / 实时网速↑↓ / 月成本 (有计费节点才显示)
@@ -91,10 +91,10 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - 派生计算全部在 `src/utils/summaryHelper.ts` (在线/地区数 / 内存磁盘求和 / 网络求和 / 财务); 月成本按 `billing_cycle` 折到 30 天, 剩余价值按距 `expired_at` 天数比例
   - 财务**经汇率折算成 CNY 统一汇总** (月成本 / 剩余价值显示人民币); 汇率源 `src/utils/exchangeRate.ts`: 以 CNY 为基准, 多源接口回退 (`open.er-api.com` → `exchangerate-api.com` → `frankfurter.app`, 均免 key), 当日 localStorage 缓存 + 过期缓存 + 内置默认值三级兜底, 离线/失败始终有可用汇率不阻塞渲染; `SummaryCards` 异步拉取, 未到位前先用默认汇率算
 - `src/components/NavBar.tsx`: 站名走 `SplitText` 字符级入场, 副标 Caveat "— monitor" 静态保持
-- 单节点详情 = **弹窗** (不再是独立页面):
-  - `src/components/InstanceModal.tsx`: Radix `@radix-ui/react-dialog` 居中弹窗, 由路由 `/instance/:uuid` (`useMatch`) 驱动 open, 关闭则 `navigate("/")`; URL 仍保留 (可直达 / 刷新 / 分享)。Portal 内重新包一层 `<Theme>` (与 dropdown-menu / drawer 一致), 让 `SegmentedControl` 等 Radix Themes 组件正常渲染。样式见 global.css `.instance-modal-*` (暖墨遮罩, 无 backdrop-filter; 限宽 960px / 限高 + 内部滚动; 右上角红墨 ✕)
-  - `src/pages/instance/InstanceDetail.tsx`: 详情内容 (供弹窗复用, 不含页面级布局/侧栏): `eyebrow Server` + Fraunces 大号 H1 (走 `SplitText`, `key={node.name}` 切换重跑) + mono UUID + `DetailsGrid` + Load/Ping 图表切换
-  - 路由层: `/` 与 `/instance/:uuid` 都渲染 `Index` (首页保持挂载), 详情靠 `InstanceModal` 叠加; 旧 `src/pages/instance/index.tsx` (带侧栏的整页详情) 已删除
+- 单节点详情 = **独立页面** (`/instance/:uuid` 走独立路由, 非弹窗):
+  - `src/pages/instance/index.tsx`: 整页布局, 锁 `calc(100vh - 5rem)` 高度、左右两栏各自内部滚动
+    - 左侧栏 (`showServerListInDetails` 开 + 非移动端才显示): `.no-tilt` 纸卡, 顶部 `eyebrow Index` + Fraunces "Servers", 分组用 `.eyebrow` 章节, active 项左侧红铅笔 3px 实线
+    - 主区头卡: `.no-tilt` + `eyebrow Server` + Fraunces 大号 H1 (走 `SplitText`, `key={node.name}` 切换重跑) + mono UUID + `DetailsGrid` + Load/Ping 图表切换
 - 图表 (`PingChart`, `LoadChart`):
   - 折线色: 墨水笔色环 (#c23b22 红 / #2c5d8f 蓝 / #5a7a3a 绿 / #b07a1f 黄褐 / #7e4ea2 紫 / ...)
   - 网格: 1px 极淡虚线 (`stroke-dasharray: 2 4`)
