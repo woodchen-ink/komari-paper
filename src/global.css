@@ -637,8 +637,19 @@ a:hover {
   overflow: hidden;
   animation: modal-content-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-/* 弹窗纸卡不参与 hover 抬升 */
-.instance-modal-content:hover { transform: translate(-50%, -50%); }
+/* 弹窗外壳复用 .paper-card 但靠 transform 居中: 彻底禁掉 hover 动画与位移,
+ * 否则 paper-card 的 hover translateY(-2px) 会顶掉居中 transform 导致卡片窜动.
+ * 双类选择器压过 .paper-card.no-tilt:hover 的特异性. */
+.instance-modal-content.paper-card,
+.instance-modal-content.paper-card:hover {
+  transform: translate(-50%, -50%);
+  transition: none;
+}
+
+/* 弹窗内部的子纸卡 (详情头卡等) 同样不做 hover 抬升, 避免卡中卡跟着浮动 */
+.instance-modal-body .paper-card:hover {
+  transform: none;
+}
 
 .instance-modal-body {
   flex: 1;
