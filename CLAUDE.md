@@ -46,12 +46,12 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - **没有 backdrop-filter**: 整个项目不再使用毛玻璃 / SVG 折射
 
 #### 卡片类
-- `.paper-card`: 主卡片 (Node 卡 / Summary / 详情页 / 图表块)
+- `.paper-card`: 主卡片 (Node 卡 / Summary / 详情弹窗 / 图表块)
   - 暖白底 + 1px 软描边 (主文字色 22% 透明) + 几乎方角 (`2px 3px 2px 3px`)
   - 双层阴影: 1px 硬偏移 (纸厚) + 12-24px 大柔影 (悬浮)
-  - **每张卡通过 `nth-child(6n+1..6)` 取不同 `--tilt` 角度** (-0.6deg / +0.4deg / -0.25deg / +0.55deg / -0.45deg / +0.2deg), 无理数互不相同, 避免对称
-  - hover: 旋转回正 + translateY(-2px) + 阴影加深, 35ms cubic-bezier
-  - 工具类 `.no-tilt`: 强制不旋转 (用于 summary / instance header / chart 容器)
+  - **卡片不再歪斜**: `--tilt` 旋转 + `nth-child(6n+1..6)` 角度规则已全部移除
+  - hover: 仅 translateY(-2px) + 阴影加深, 35ms cubic-bezier (无旋转回正)
+  - 工具类 `.no-tilt`: 卡片歪斜已全局移除, 此类退化为 no-op 别名, 兼容历史标记
 - `.paper-strip`: NavBar / 不可旋转的纸条 (单层硬阴影)
 
 #### Editorial 装饰类 (按需用, 高度克制)
@@ -66,7 +66,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 
 #### 动效组件 (手撸, 不引第三方动画库)
 - `src/components/SplitText.tsx`: 字符级 stagger 入场, `Array.from` 拆 codepoint (兼容中文/emoji); 默认 step 35ms / duration 520ms / ease-out cubic + 微下移 + 2px blur; `[data-split-text] .split-text-char` keyframe 在 `global.css` 定义, `prefers-reduced-motion` 自动停。**只用于首屏封面感**: NavBar 站名 / 详情页 H1 服务器名
-- `src/components/CountUp.tsx`: `requestAnimationFrame` + ease-out cubic 数字滚动, 600ms; 接收 `string | number`, 仅滚动第一段整数 (前后缀如 ` / 10` 原样穿过); `currentRef` 兜底动画中断; reduced-motion 直显; 用于首页 Summary "currentOnline" / "regionOverview" 等纯整数项, 不用于带单位/方向箭头的传输量
+- `src/components/CountUp.tsx`: `requestAnimationFrame` + ease-out cubic 数字滚动, 600ms; 接收 `string | number`, 仅滚动第一段整数 (前后缀如 ` / 10` 原样穿过); `currentRef` 兜底动画中断; reduced-motion 直显; 用于首页 Summary 在线节点数等纯整数项, 不用于带单位/方向箭头的传输量
 
 #### 关键组件
 - `src/components/DynamicBackground.tsx`: 极简, 仅渲染极淡 vignette + 用户自定义背景图 (sepia + multiply 半透明叠层, "夹照片"风格); 不再画咖啡渍 / 墨点
@@ -82,12 +82,19 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - GroupPill: 极简文字 tab + active 红铅笔下划 + 衬线 italic
 - `src/components/UsageBar.tsx`: 极简方块条 (4-5px 高), 红/橙/墨色阈值; label 用 eyebrow 样式
 - `src/components/NavBar.tsx`: 站点名 Fraunces 大号粗体 (opsz 144, WONK 1) + 副标 Caveat "— monitor" 微旋红色
-- `src/pages/_layout.tsx`: 仅挂 `DynamicBackground` + `SmoothScroll`, **`LiquidGlassEffect` 已删除**
-- `src/pages/Index.tsx`: Summary 卡是 `.no-tilt` + `.eyebrow` 章节标题 + 4 列 ticker (Fraunces 数值 + 极细竖线分隔); 纯整数值 (`currentOnline` / `regionOverview`) 走 `CountUp`, 带 ↑↓/单位的传输/速率原样渲染
+- `src/pages/_layout.tsx`: 挂 `DynamicBackground` + `SmoothScroll` + `Outlet` + `InstanceModal` (详情弹窗常驻于布局, 叠加于首页之上)
+- `src/pages/Index.tsx`: 渲染 `SummaryCards` (汇总卡组) + `NodeDisplay` (节点列表); 旧的单行 ticker 已替换
+- `src/components/SummaryCards.tsx`: 首页顶部汇总卡组 (取代旧 ticker)
+  - `eyebrow Overview` 章节标题 + 指标卡网格 (移动 2 列 / 平板 3 列 / 桌面 6 列): 在线节点 (走 `CountUp`) / 内存用量% / 磁盘用量% / 总流量↑↓ / 实时网速↑↓ / 月成本 (有计费节点才显示)
+  - 每张卡: `eyebrow` 标签 + lucide 图标 + mono tabular 大号数值 + 副信息; 全部 `.no-tilt`
+  - 下方地区概览条: 报刊式横排, 旗帜 + 在线计数 + 细竖线分隔
+  - 派生计算全部在 `src/utils/summaryHelper.ts` (在线/地区数 / 内存磁盘求和 / 网络求和 / 财务); 月成本按 `billing_cycle` 折到 30 天, 剩余价值按距 `expired_at` 天数比例
+  - 财务**经汇率折算成 CNY 统一汇总** (月成本 / 剩余价值显示人民币); 汇率源 `src/utils/exchangeRate.ts`: 以 CNY 为基准, 多源接口回退 (`open.er-api.com` → `exchangerate-api.com` → `frankfurter.app`, 均免 key), 当日 localStorage 缓存 + 过期缓存 + 内置默认值三级兜底, 离线/失败始终有可用汇率不阻塞渲染; `SummaryCards` 异步拉取, 未到位前先用默认汇率算
 - `src/components/NavBar.tsx`: 站名走 `SplitText` 字符级入场, 副标 Caveat "— monitor" 静态保持
-- `src/pages/instance/index.tsx`:
-  - 侧栏: `.no-tilt` 纸卡; 顶部 `eyebrow Index` + Fraunces "Servers"; 分组用 `.eyebrow` 章节; active 用左侧红铅笔 3px 实线
-  - 主区头卡: `.no-tilt` + `eyebrow Server` + Fraunces 大号 H1 (opsz 144 + WONK + SOFT, 走 `SplitText`, `key={node.name}` 切换 server 重跑入场) + mono UUID
+- 单节点详情 = **弹窗** (不再是独立页面):
+  - `src/components/InstanceModal.tsx`: Radix `@radix-ui/react-dialog` 居中弹窗, 由路由 `/instance/:uuid` (`useMatch`) 驱动 open, 关闭则 `navigate("/")`; URL 仍保留 (可直达 / 刷新 / 分享)。Portal 内重新包一层 `<Theme>` (与 dropdown-menu / drawer 一致), 让 `SegmentedControl` 等 Radix Themes 组件正常渲染。样式见 global.css `.instance-modal-*` (暖墨遮罩, 无 backdrop-filter; 限宽 960px / 限高 + 内部滚动; 右上角红墨 ✕)
+  - `src/pages/instance/InstanceDetail.tsx`: 详情内容 (供弹窗复用, 不含页面级布局/侧栏): `eyebrow Server` + Fraunces 大号 H1 (走 `SplitText`, `key={node.name}` 切换重跑) + mono UUID + `DetailsGrid` + Load/Ping 图表切换
+  - 路由层: `/` 与 `/instance/:uuid` 都渲染 `Index` (首页保持挂载), 详情靠 `InstanceModal` 叠加; 旧 `src/pages/instance/index.tsx` (带侧栏的整页详情) 已删除
 - 图表 (`PingChart`, `LoadChart`):
   - 折线色: 墨水笔色环 (#c23b22 红 / #2c5d8f 蓝 / #5a7a3a 绿 / #b07a1f 黄褐 / #7e4ea2 紫 / ...)
   - 网格: 1px 极淡虚线 (`stroke-dasharray: 2 4`)

@@ -13,11 +13,10 @@ export const routes: RouteObject[] = [
     path: "/",
     element: React.createElement(lazy(() => import("./pages/_layout"))),
     children: [
+      // 首页. /instance/:uuid 也渲染首页, 详情以弹窗形式由根布局的
+      // InstanceModal 叠加显示 (URL 仍保留, 可直达/刷新/分享)
       { index: true, element: React.createElement(Index) },
-      {
-        path: "instance/:uuid",
-        element: React.createElement(lazy(() => import("./pages/instance"))),
-      },
+      { path: "instance/:uuid", element: React.createElement(Index) },
     ],
   },
   {

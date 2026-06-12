@@ -264,11 +264,9 @@ body, * {
  *   - 几乎方角 (border-radius 2-3px), 不再追求手撕大圆角
  *   - 双层阴影: 1px 硬偏移 (纸厚) + 12px 大柔影 (悬浮于纸面)
  *   - 1px 实线边框, 用主文字色 22% 透明 (软描边)
- *   - 默认带 --tilt 旋转量, 各卡片用 nth-child 取不同角度
- *   - hover 旋转回正 + 轻微抬升
+ *   - 卡片不再歪斜 (--tilt 已移除); hover 仅做轻微抬升
  * ============================================== */
 .paper-card {
-  --tilt: 0deg;
   position: relative;
   background-color: var(--card);
   color: var(--ink);
@@ -278,7 +276,6 @@ body, * {
     1px 1px 0 0 rgba(42, 38, 34, 0.18),
     0 8px 24px -8px rgba(42, 38, 34, 0.18),
     0 1px 2px rgba(42, 38, 34, 0.05);
-  transform: rotate(var(--tilt));
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
               box-shadow 0.35s ease;
   background-image:
@@ -288,26 +285,16 @@ body, * {
 }
 
 .paper-card:hover {
-  transform: rotate(0deg) translateY(-2px);
+  transform: translateY(-2px);
   box-shadow:
     1px 1px 0 0 rgba(42, 38, 34, 0.22),
     0 14px 30px -10px rgba(42, 38, 34, 0.22),
     0 1px 2px rgba(42, 38, 34, 0.06);
 }
 
-/* 每张卡轻微独立旋转 — 用无理数角度避免对称感.
- * 通过 nth-child 派出 6 种状态; 配合 NodeGrid 的 6+ 张卡循环.
- * 注: 父容器需要 display: flex/grid 等让 nth-child 生效 (节点列表是 flex-col, OK). */
-.paper-card:nth-child(6n+1) { --tilt: -0.6deg; }
-.paper-card:nth-child(6n+2) { --tilt:  0.4deg; }
-.paper-card:nth-child(6n+3) { --tilt: -0.25deg; }
-.paper-card:nth-child(6n+4) { --tilt:  0.55deg; }
-.paper-card:nth-child(6n+5) { --tilt: -0.45deg; }
-.paper-card:nth-child(6n+6) { --tilt:  0.2deg; }
-
-/* 工具类: 强制不旋转 (用于 summary card / instance header 等不该歪的卡) */
-.paper-card.no-tilt,
-.paper-card.no-tilt:hover { transform: none; }
+/* 工具类 .no-tilt: 卡片歪斜已全局移除, 此类保留为 no-op 别名,
+ * 兼容历史标记 (summary / instance header / chart 容器), 不再产生差异 */
+.paper-card.no-tilt:hover { transform: translateY(-2px); }
 
 @media (prefers-reduced-motion: reduce) {
   .paper-card,
@@ -620,4 +607,81 @@ a {
 a:hover {
   color: var(--pen-red);
   text-decoration-color: var(--pen-red);
+}
+
+/* ==============================================
+ * 节点详情弹窗 (Radix Dialog)
+ *   - 遮罩: 暖墨色半透明, 无毛玻璃 (本主题不用 backdrop-filter)
+ *   - 内容: 居中纸卡, 限宽 + 限高, 内部滚动
+ *   - 关闭: 右上角红墨 ✕
+ * ============================================== */
+.instance-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(42, 38, 34, 0.42);
+  animation: modal-overlay-in 0.2s ease-out;
+}
+
+.instance-modal-content {
+  position: fixed;
+  z-index: 51;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(960px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 3rem);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  animation: modal-content-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* 弹窗纸卡不参与 hover 抬升 */
+.instance-modal-content:hover { transform: translate(-50%, -50%); }
+
+.instance-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.25rem 1.25rem 1.5rem;
+  /* 该节点同时是 Radix <Theme> 容器, 透明化让纸卡背景透出, 取消其默认 min-height */
+  background: transparent;
+  min-width: 0;
+}
+
+.instance-modal-close {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 2;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: var(--pen-red);
+  background: var(--paper-card);
+  border: 1px solid var(--ink-line-soft);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.instance-modal-close:hover {
+  background: var(--paper-soft);
+  transform: rotate(-6deg);
+}
+
+@keyframes modal-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-content-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .instance-modal-overlay,
+  .instance-modal-content { animation: none; }
 }

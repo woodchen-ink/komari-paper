@@ -294,8 +294,14 @@
   },
   "copy": "Copy",
   "copy_success": "Copied!",
-  "current_online": "Current Online",
+  "current_online": "Online",
   "current_time": "Current Time",
+  "summary": {
+    "overview": "Overview",
+    "regions": "{{count}} regions",
+    "monthly_cost": "Monthly",
+    "remaining": "Remaining {{value}}"
+  },
   "delete": "Delete",
   "exec": {
     "allCompleted": "All tasks executed successfully",
