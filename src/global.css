@@ -92,7 +92,7 @@
   /* 纸色 — 暖白基底, 微微偏黄, 不是过饱和米黄 */
   --paper: #f4efe6;             /* 主纸张 (暖白, Stripe Press / Are.na 取色感) */
   --paper-soft: #ebe4d4;        /* 略深一档, 用作 hover / 内嵌格子 */
-  --paper-card: #fbf7ee;        /* 卡片本体 (近米白) */
+  --paper-card: #f7f1e4;        /* 卡片本体 (暖米白, 比纸面略亮但不发白) */
   --paper-edge: #d9cfb7;        /* 纸边阴影 */
   --paper-cool: #ebe9e1;        /* 冷调灰白, 用于侧栏 / 二级面板, 与主纸对比 */
 
@@ -387,7 +387,13 @@ body, * {
   font-family: var(--font-serif) !important;
 }
 
-/* tooltip: 极简白卡 */
+/* tooltip 浮层: 拔高 z-index, 避免被后续兄弟卡片 / 图表块盖住 (弹窗内尤为明显) */
+.instance-page .recharts-tooltip-wrapper {
+  z-index: 30 !important;
+  pointer-events: none;
+}
+
+/* tooltip: 极简纸卡 (非纯白) */
 .instance-page .recharts-tooltip-wrapper > div,
 .instance-page .recharts-default-tooltip {
   background: var(--card) !important;
@@ -647,19 +653,36 @@ a:hover {
 }
 
 /* 弹窗内部的子纸卡 (详情头卡等) 同样不做 hover 抬升, 避免卡中卡跟着浮动 */
-.instance-modal-body .paper-card:hover {
+.instance-modal-scroll .paper-card:hover {
   transform: none;
 }
 
-.instance-modal-body {
+/* Radix <Theme> 容器: 不滚动 (让内部 Popover Tips portal 进来后不被 overflow 裁掉),
+ * 透明化让弹窗纸卡背景透出, 占满高度交给内层 scroll */
+.instance-modal-theme {
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  /* Radix Themes 在 .radix-themes 上把这些面板/背景变量定成近白 (#fff/#fcfcfc),
+   * 弹窗内的图表 tooltip / 浮层会因此显纯白. 作用域内拉回纸色, 与整站"无纯白"一致. */
+  --color-background: var(--paper);
+  --color-panel-solid: var(--paper-card);
+  --color-panel-translucent: var(--paper-card);
+  --color-surface: var(--paper-card);
+  --gray-1: var(--paper);
+  --gray-2: var(--paper-card);
+}
+/* 实际滚动容器 */
+.instance-modal-scroll {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 1.25rem 1.25rem 1.5rem;
-  /* 该节点同时是 Radix <Theme> 容器, 透明化让纸卡背景透出, 取消其默认 min-height */
-  background: transparent;
-  min-width: 0;
 }
 
 .instance-modal-close {

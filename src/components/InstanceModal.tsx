@@ -42,15 +42,21 @@ export default function InstanceModal() {
           >
             <X size={18} />
           </Dialog.Close>
-          {/* Radix Themes 组件 (SegmentedControl 等) 经 Portal 渲染脱离根 <Theme>,
-              在 Content 内部重新包一层 Theme (与 dropdown-menu 一致: 只包 children,
-              不包 Overlay, 避免全屏 radix-themes 容器盖住遮罩) */}
-          <Theme appearance="light" accentColor={color} className="instance-modal-body">
-            {uuid && (
-              <Suspense fallback={<ChartSkeleton />}>
-                <InstanceDetail uuid={uuid} />
-              </Suspense>
-            )}
+          {/* Radix Themes 组件 (SegmentedControl / Popover Tips 等) 经 Portal 渲染到
+              最近的 <Theme> 容器, 故在此重新包一层 Theme. Theme 本身不滚动 (否则 Tips
+              的 Popover portal 进来会被 overflow 裁掉), 滚动交给内层 instance-modal-scroll. */}
+          <Theme
+            appearance="light"
+            accentColor={color}
+            className="instance-modal-theme"
+          >
+            <div className="instance-modal-scroll">
+              {uuid && (
+                <Suspense fallback={<ChartSkeleton />}>
+                  <InstanceDetail uuid={uuid} />
+                </Suspense>
+              )}
+            </div>
           </Theme>
         </Dialog.Content>
       </Dialog.Portal>
