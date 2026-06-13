@@ -87,8 +87,8 @@ const PriceTags = ({
   billing_cycle?: number;
   currency?: string;
   tags?: string;
-  ip4?: any;
-  ip6?: any;
+  ip4?: unknown;
+  ip6?: unknown;
   layout?: "flow" | "grid2";
 } & React.ComponentProps<typeof Flex>) => {
   const [t] = useTranslation();

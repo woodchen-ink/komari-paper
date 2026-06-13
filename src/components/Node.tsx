@@ -107,6 +107,7 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
   const downSpeed = formatSpeed(liveData.network.down);
 
   const showIpTags = publicInfo?.theme_settings?.showIpTagsInCard;
+  const ipVersionTag = basic.ipv4 && basic.ipv6 ? "V10" : basic.ipv4 ? "V4" : basic.ipv6 ? "V6" : "";
 
   // 离线节点：精简卡片，红色脉冲点 + 关键标签
   if (!online) {
@@ -168,8 +169,6 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
             expired_at={basic.expired_at}
             currency={basic.currency}
             tags={basic.tags}
-            ip4={showIpTags ? basic.ipv4 : undefined}
-            ip6={showIpTags ? basic.ipv6 : undefined}
           />
           </div>
         </div>
@@ -350,10 +349,15 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
         {/* 三级 · 脚注: 连接/进程/uptime + OS·arch·CPU, 淡色小字, 不抢视线 */}
         <div className="node-card-meta flex flex-col gap-0.5 text-[11px] min-w-0">
           <div className="flex items-center justify-between gap-2 font-mono min-w-0">
-            <span className="truncate">
+            <span className="min-w-0 flex-1 truncate">
               TCP {liveData.connections?.tcp ?? 0} · UDP {liveData.connections?.udp ?? 0} · P{" "}
               {liveData.process ?? 0}
             </span>
+            {showIpTags && ipVersionTag && (
+              <span className="shrink-0 rounded-sm border border-green-500/30 bg-green-500/10 px-1 text-[10px] leading-3 text-green-700 dark:text-green-300">
+                {ipVersionTag}
+              </span>
+            )}
             {liveData.uptime > 0 && (
               <span className="flex items-center gap-0.5 shrink-0 whitespace-nowrap">
                 <Clock className="size-3" />
@@ -387,8 +391,6 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
             expired_at={basic.expired_at}
             currency={basic.currency}
             tags={basic.tags || ""}
-            ip4={showIpTags ? basic.ipv4 : undefined}
-            ip6={showIpTags ? basic.ipv6 : undefined}
           />
         </div>
       </div>
