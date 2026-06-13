@@ -31,7 +31,7 @@ const Index = () => {
       return (
         <div className="w-full max-w-384 mx-auto">
           <SummaryCardSkeleton />
-          <NodeListSkeleton count={4} />
+          <NodeListSkeleton count={8} />
         </div>
       );
     }
@@ -42,7 +42,7 @@ const Index = () => {
       <div className="w-full max-w-384 mx-auto">
         {/* 顶部汇总卡组: 在线 / 内存 / 磁盘 / 总流量 / 网速 / 财务 + 地区概览条 */}
         <SummaryCards nodes={nodeList ?? []} liveData={live_data?.data} />
-        <Suspense fallback={<NodeListSkeleton count={4} />}>
+        <Suspense fallback={<NodeListSkeleton count={8} />}>
           <NodeDisplay
             nodes={nodeList ?? []}
             liveData={live_data?.data ?? { online: [], data: {} }}

@@ -35,52 +35,81 @@ export const SummaryCardSkeleton = () => (
   </section>
 );
 
-// 单张节点卡骨架: 顶部行 + 6 模块网格, 与真实 Node card 同形
+// 单张便签卡骨架: 头 + 资源 2×2 块 + 网络/健康两列 + 脚注 + 价格, 与真实 Node card 同形
 export const NodeCardSkeleton = () => (
-  <div className="paper-card w-full p-4">
-    <div className="flex items-center justify-between mb-3 gap-2">
-      <div className="flex items-center gap-2">
-        <div className="skeleton h-4 w-6" />
-        <div className="skeleton h-5 w-40" />
-      </div>
-      <div className="hidden sm:flex items-center gap-2">
-        <div className="skeleton h-3 w-20" />
-        <div className="skeleton h-4 w-12" />
-        <div className="skeleton h-3 w-16" />
-      </div>
+  <div className="paper-card w-full p-3 flex flex-col gap-2.5">
+    {/* 头: 旗 + 名 + 分组 */}
+    <div className="flex items-center gap-2">
+      <div className="skeleton h-4 w-6" />
+      <div className="skeleton h-4 w-32 flex-1 max-w-40" />
+      <div className="skeleton h-4 w-10" />
     </div>
 
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="p-2"
-          style={{
-            background: "var(--paper-cool)",
-            border: "1px solid var(--ink-line-soft)",
-            borderRadius: "2px",
-          }}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="skeleton h-3 w-12" />
+    {/* 资源 2×2 凹陷数据块 */}
+    <div
+      className="grid grid-cols-2 gap-x-3 gap-y-2.5"
+      style={{
+        background: "var(--paper-cool)",
+        border: "1px solid var(--ink-line-soft)",
+        borderRadius: "2px",
+        padding: "0.625rem 0.75rem",
+      }}
+    >
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="skeleton h-2.5 w-10" />
             <div className="skeleton h-3 w-8" />
           </div>
-          <div className="skeleton h-2 w-full mb-2" />
-          <div className="skeleton h-3 w-3/4" />
+          <div className="skeleton h-1.25 w-full" />
+          <div className="skeleton h-2.5 w-3/4 mt-1" />
         </div>
       ))}
     </div>
 
-    <div className="mt-3 pt-2 flex items-center justify-between gap-2">
-      <div className="skeleton h-4 w-32" />
-      <div className="skeleton h-3 w-28" />
+    {/* 网络 2 列 */}
+    <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div key={i}>
+          <div className="skeleton h-2.5 w-10 mb-1" />
+          <div className="skeleton h-3 w-4/5" />
+        </div>
+      ))}
+    </div>
+
+    {/* 健康 2 列: 标签行 + 柱图 */}
+    <div className="grid grid-cols-2 gap-x-3">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div key={i}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="skeleton h-2.5 w-12" />
+            <div className="skeleton h-3 w-10" />
+          </div>
+          <div className="skeleton h-6 w-full" />
+        </div>
+      ))}
+    </div>
+
+    {/* 脚注 2 行 */}
+    <div
+      className="flex flex-col gap-1 pt-1.5"
+      style={{ borderTop: "1px solid var(--ink-line-soft)" }}
+    >
+      <div className="skeleton h-2.5 w-2/3" />
+      <div className="skeleton h-2.5 w-3/4" />
+    </div>
+
+    {/* 价格 2 列 */}
+    <div className="grid grid-cols-2 gap-1 mt-auto pt-1">
+      <div className="skeleton h-5 w-full" />
+      <div className="skeleton h-5 w-full" />
     </div>
   </div>
 );
 
-// 节点列表骨架: N 张节点骨架按真实间距排列
-export const NodeListSkeleton = ({ count = 4 }: { count?: number }) => (
-  <div className="w-full mt-4 flex flex-col" style={{ rowGap: "1rem" }}>
+// 节点列表骨架: N 张便签骨架按真实网格排列 (手机 1 / 平板 2 / 笔记本 3 / 大屏 4 列)
+export const NodeListSkeleton = ({ count = 8 }: { count?: number }) => (
+  <div className="w-full mt-4 grid items-stretch gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
     {Array.from({ length: count }).map((_, i) => (
       <NodeCardSkeleton key={i} />
     ))}
