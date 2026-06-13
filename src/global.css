@@ -344,6 +344,25 @@ body, * {
 }
 
 /* ==============================================
+ * 便签卡三级信息层次:
+ *   一级 .node-metric-block — 资源 2×2, 凹陷成冷调副纸数据块 (视觉重心)
+ *   二级 网络/健康          — 卡片主纸上平铺 (默认墨色)
+ *   三级 .node-card-meta    — 连接/OS/CPU 脚注, 淡色 + 顶部极细分隔线
+ * ============================================== */
+.node-metric-block {
+  background: var(--paper-cool);
+  border: 1px solid var(--ink-line-soft);
+  border-radius: 2px;
+  padding: 0.625rem 0.75rem;
+}
+
+.node-card-meta {
+  color: var(--ink-mute);
+  padding-top: 0.375rem;
+  border-top: 1px solid var(--ink-line-soft);
+}
+
+/* ==============================================
  * Radix SegmentedControl: 极简方框, 印刷感
  * ============================================== */
 .rt-SegmentedControlRoot {

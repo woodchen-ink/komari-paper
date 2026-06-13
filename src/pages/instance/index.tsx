@@ -210,7 +210,7 @@ export default function InstancePage() {
       {/* 主区: 自身内部滚动, 顶部头卡 + tab + 图表区 */}
       <div className="flex-1 min-w-0 h-full overflow-y-auto overscroll-contain pr-1">
         <div className="flex flex-col items-center gap-3 pb-4">
-          <div className="paper-card no-tilt w-full flex flex-col gap-3 p-6">
+          <div className="paper-card no-tilt w-full flex flex-col gap-2.5 p-5">
             <div className="eyebrow">Server</div>
             <h1 className="flex items-baseline flex-wrap gap-3 m-0">
               <Flag flag={node?.region ?? ""} />

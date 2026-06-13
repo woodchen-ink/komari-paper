@@ -29,7 +29,7 @@ const Index = () => {
     // 节点列表未到位前: summary 卡 + 节点列表都用骨架
     if (isLoading || !nodeList) {
       return (
-        <div className="w-full max-w-5xl mx-auto">
+        <div className="w-full max-w-384 mx-auto">
           <SummaryCardSkeleton />
           <NodeListSkeleton count={4} />
         </div>
@@ -39,7 +39,7 @@ const Index = () => {
     //#endregion
 
     return (
-      <div className="w-full max-w-5xl mx-auto">
+      <div className="w-full max-w-384 mx-auto">
         {/* 顶部汇总卡组: 在线 / 内存 / 磁盘 / 总流量 / 网速 / 财务 + 地区概览条 */}
         <SummaryCards nodes={nodeList ?? []} liveData={live_data?.data} />
         <Suspense fallback={<NodeListSkeleton count={4} />}>

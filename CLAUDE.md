@@ -70,20 +70,30 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 
 #### 关键组件
 - `src/components/DynamicBackground.tsx`: 极简, 仅渲染极淡 vignette + 用户自定义背景图 (sepia + multiply 半透明叠层, "夹照片"风格); 不再画咖啡渍 / 墨点
-- `src/components/Node.tsx`: 6 宫格节点卡 (`paper-card + node-card`)
-  - 节点名 H3: Fraunces 600 + opsz 48
-  - 分组: `#group` 红铅笔批注 (Caveat + var(--pen-red), 不加边框, 微旋)
-  - 6 模块小标题: `.eyebrow` 类 (Fraunces italic 大写)
-  - 6 模块数值: `font-mono font-tabular` 类 (JetBrains Mono + tabular)
-  - 离线: 红铅笔点 + ink-pulse (透明度脉冲, 不是光晕)
+- `src/components/Node.tsx`: 便签风格紧凑节点卡 (`paper-card + node-card`), 信息密度高且分三级层次; `NodeGrid` 响应式网格 (手机 1 / 平板 2 / 笔记本 3 / 大屏 `2xl` 4 列, `items-stretch` 同行等高)
+  - **三级信息层次** (靠底色分层 + 字阶, 不堆边框): ① 资源块 (`.node-metric-block` 冷调副纸凹陷, 视觉重心) ② 网络/健康 (主纸平铺墨色) ③ 脚注 (`.node-card-meta` 淡色 + 顶部细线)
+  - 卡内结构 (在线): 头 (旗 + 名 Fraunces 600/opsz48 + `#group` 红铅笔批注) → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + mono 数值 + `UsageBar compact` + 已用/总量小字) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → **健康 2 列** (延迟 / 丢包, 数字带阈值色 + `MiniBars` 迷你柱图) → **脚注** (TCP·UDP·进程 + uptime / OS·arch·CPU型号, truncate + title) → `PriceTags layout="grid2"`
+  - 卡片 `flex flex-col h-full gap-2.5` + 价格区 `mt-auto`, 保证网格同行等高
+  - 负载基准: `load1 / cpu_cores` 折百分比驱动 bar; 多 ping task 取延迟最低的 task
+  - 离线: 红铅笔脉冲点 + 名 + 分组 + Caveat "offline" 批注 + 价格; ping 不拉取
+  - `formatUptime` 仍 export (被 `DetailsGrid` / `NodeTable` 引用)
+- `src/hooks/useNodePing.ts`: 便签卡 ping 数据 hook —— RPC2 `common:getRecords` 按 uuid 拉最近 1h, 汇总成 `{latest, loss, values[]}`
+  - **控制首页 N 节点请求量**: 模块级 `cache` (同 uuid 多组件共享一份, 不重复请求) + 60s 节流 + 按 uuid 错峰 0~800ms 首拉 + 离线节点 `enabled=false` 不拉
+  - 多 task 取延迟最低者; 丢包率 = `value<0 计数 / 总计 × 100`; 失败/无数据返回 null 不阻塞
+- `src/components/MiniBars.tsx`: 纯 CSS 迷你柱图 (不引 Recharts), 柱高 = 延迟相对峰值占比, 阈值色 (≤80 苔绿 `--data-2` / ≤200 赭黄 `--data-3` / 更高 + 丢包点红 `--pen-red`)
+- `src/components/DetailsGrid.tsx`: 单节点详情主信息区, 三段 (Live 实时指标 / GPU / Spec 静态规格)
+  - Live: CPU/内存/磁盘/swap (% + 已用/总量 + bar) + 网速 + 总流量 + 负载 1/5/15 + 连接/进程 + uptime
+  - GPU: 有才显示, 每块利用率 + 显存 + 温度; Spec: CPU型号·核心 / arch / 虚拟化 / GPU名 / OS / 内核 / 最后更新
+  - 便签卡收紧后, 流量/连接/负载/swap/CPU用量/内存磁盘明细/GPU 的**完整数据全在此查看**
+- `src/components/PriceTags.tsx`: 价格/到期/标签徽章组, `layout` prop —— `"flow"` (默认, Flex 自由换行, 表格/admin 用) / `"grid2"` (每行 2 个定宽 + truncate + title, 便签卡用)
 - `src/components/NodeDisplay.tsx`:
   - 顶部章节: `eyebrow Fleet` + Fraunces 大号 H2 "Servers" + 右侧 mono 计数 (像杂志页眉)
   - 搜索框: 仅底部 1px 细线, focus 加红
   - GroupPill: 极简文字 tab + active 红铅笔下划 + 衬线 italic
 - `src/components/UsageBar.tsx`: 极简方块条 (4-5px 高), 红/橙/墨色阈值; label 用 eyebrow 样式
 - `src/components/NavBar.tsx`: 站点名 Fraunces 大号粗体 (opsz 144, WONK 1) + 副标 Caveat "— monitor" 微旋红色
-- `src/pages/_layout.tsx`: 挂 `DynamicBackground` + `SmoothScroll` + `Outlet`
-- `src/pages/Index.tsx`: 渲染 `SummaryCards` (汇总卡组) + `NodeDisplay` (节点列表); 旧的单行 ticker 已替换
+- `src/pages/_layout.tsx`: 挂 `DynamicBackground` + `SmoothScroll` + `Outlet`; 首页内容区固定 `max-w-384` (1536px), NavBar 同宽对齐 (`mainContentWidth` 主题配置项未接入, 宽度写死)
+- `src/pages/Index.tsx`: 渲染 `SummaryCards` (汇总卡组) + `NodeDisplay` (节点列表); 内容壳同样 `max-w-384`; 旧的单行 ticker 已替换
 - `src/components/SummaryCards.tsx`: 首页顶部汇总卡组 (取代旧 ticker)
   - `eyebrow Overview` 章节标题 + 指标卡网格 (移动 2 列 / 平板 3 列 / 桌面 6 列): 在线节点 (走 `CountUp`) / 内存用量% / 磁盘用量% / 总流量↑↓ / 实时网速↑↓ / 月成本 (有计费节点才显示)
   - 每张卡: `eyebrow` 标签 + lucide 图标 + mono tabular 大号数值 + 副信息; 全部 `.no-tilt`
