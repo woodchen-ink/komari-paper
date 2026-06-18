@@ -2,6 +2,10 @@ import LoginDialog from "./Login";
 import { Link } from "react-router-dom";
 import { usePublicInfo } from "@/contexts/PublicInfoContext";
 import SplitText from "./SplitText";
+import { TablerBrandGithub } from "./Icones/Tabler";
+
+// 主题仓库地址 (与 komari-theme.json 的 url 保持一致)
+const REPO_URL = "https://github.com/woodchen-ink/komari-paper";
 
 const NavBar = () => {
   const { publicInfo } = usePublicInfo();
@@ -40,6 +44,17 @@ const NavBar = () => {
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
+        {/* GitHub: 跳转主题仓库, 印刷纸片风格方钮, 置于设置按钮左侧 */}
+        <a
+          href={REPO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="paper-icon-btn"
+          aria-label="GitHub repository"
+          title="GitHub"
+        >
+          <TablerBrandGithub />
+        </a>
         {publicInfo?.private_site && !document.cookie.includes("temp_key") ? (
           <LoginDialog
             autoOpen={

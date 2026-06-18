@@ -6,7 +6,6 @@ import {
   TextField,
   Button,
   Box,
-  IconButton,
 } from "@radix-ui/themes";
 import { useTranslation } from "react-i18next";
 import { TablerSettings } from "./Icones/Tabler";
@@ -98,13 +97,22 @@ const LoginDialog = ({ trigger, autoOpen = false, showSettings = true, info, onL
     };
 
     if (loading) {
-      return <Button disabled>{t("loading")}</Button>;
+      return (
+        <button type="button" className="paper-text-btn" disabled>
+          {t("loading")}
+        </button>
+      );
     }
     if (error || !account) {
       return (
-        <Button disabled color="red">
+        <button
+          type="button"
+          className="paper-text-btn"
+          disabled
+          style={{ color: "var(--pen-red)" }}
+        >
           Error
-        </Button>
+        </button>
       );
     }
     if (account.logged_in) {
@@ -112,10 +120,14 @@ const LoginDialog = ({ trigger, autoOpen = false, showSettings = true, info, onL
         return null;
       }
       return (
-        <a href="/admin" target="_blank">
-          <IconButton>
-            <TablerSettings></TablerSettings>
-          </IconButton>
+        <a
+          href="/admin"
+          target="_blank"
+          className="paper-icon-btn"
+          aria-label={t("login.title")}
+          title="Admin"
+        >
+          <TablerSettings />
         </a>
       );
     }
@@ -129,7 +141,9 @@ const LoginDialog = ({ trigger, autoOpen = false, showSettings = true, info, onL
         // 如果提供了自定义触发器，包装一层点击
         if (typeof trigger === "string") {
           return (
-            <Button onClick={redirect}>{trigger}</Button>
+            <button type="button" className="paper-text-btn" onClick={redirect}>
+              {trigger}
+            </button>
           );
         }
         return (
@@ -140,13 +154,19 @@ const LoginDialog = ({ trigger, autoOpen = false, showSettings = true, info, onL
       }
       // 默认按钮
       return (
-        <Button onClick={redirect}>{t("login.title")}</Button>
+        <button type="button" className="paper-text-btn" onClick={redirect}>
+          {t("login.title")}
+        </button>
       );
     }
     return (
   <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Trigger>
-          {trigger ? trigger : <Button>{t("login.title")}</Button>}
+          {trigger ? trigger : (
+            <button type="button" className="paper-text-btn">
+              {t("login.title")}
+            </button>
+          )}
         </Dialog.Trigger>
         <Dialog.Content maxWidth="450px">
           <Dialog.Title>{t("login.title")}</Dialog.Title>

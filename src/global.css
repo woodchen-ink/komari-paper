@@ -314,6 +314,107 @@ body, * {
 }
 
 /* ==============================================
+ * Header 图标按钮 (GitHub / 设置): 印刷纸片风格方钮
+ *   暖白纸面 + 软墨描边 + 1px 硬偏移 (纸厚) + 墨色描线图标
+ *   hover 上浮 1px + 阴影加深, active 回压; 替代 Radix 默认紫色 IconButton
+ * ============================================== */
+.paper-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 3px;
+  background: var(--paper-card);
+  border: 1px solid var(--ink-line-soft);
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+  cursor: pointer;
+  box-shadow: 1px 1px 0 0 rgba(42, 38, 34, 0.12);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+.paper-icon-btn:hover {
+  color: var(--ink);
+  border-color: var(--ink-line);
+  transform: translateY(-1px);
+  box-shadow:
+    1px 2px 0 0 rgba(42, 38, 34, 0.16),
+    0 6px 14px -8px rgba(42, 38, 34, 0.25);
+}
+.paper-icon-btn:active {
+  transform: translateY(0);
+  box-shadow: 1px 1px 0 0 rgba(42, 38, 34, 0.12);
+}
+.paper-icon-btn:focus-visible {
+  outline: 2px solid var(--pen-red);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .paper-icon-btn,
+  .paper-icon-btn:hover,
+  .paper-icon-btn:active { transition: none; transform: none; }
+}
+
+/* ==============================================
+ * Header 文字按钮 (Login / OAuth / 状态钮): 纸条文字钮
+ *   与 .paper-icon-btn 同套质感, 等高 2.25rem; Fraunces 衬线 + 墨色字
+ *   替代 Radix 默认紫色 <Button>, 让未登录态的 Login 钮与方钮成套
+ *   disabled: 降透明度并去交互 (loading / error 复用)
+ * ============================================== */
+.paper-text-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.25rem;
+  padding: 0 0.85rem;
+  border-radius: 3px;
+  background: var(--paper-card);
+  border: 1px solid var(--ink-line-soft);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 1px 1px 0 0 rgba(42, 38, 34, 0.12);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+.paper-text-btn:hover:not(:disabled) {
+  border-color: var(--ink-line);
+  transform: translateY(-1px);
+  box-shadow:
+    1px 2px 0 0 rgba(42, 38, 34, 0.16),
+    0 6px 14px -8px rgba(42, 38, 34, 0.25);
+}
+.paper-text-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 1px 1px 0 0 rgba(42, 38, 34, 0.12);
+}
+.paper-text-btn:focus-visible {
+  outline: 2px solid var(--pen-red);
+  outline-offset: 2px;
+}
+.paper-text-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .paper-text-btn,
+  .paper-text-btn:hover,
+  .paper-text-btn:active { transition: none; transform: none; }
+}
+
+/* ==============================================
  * 顶部 summary / 节点卡 / 详情页文字色:
  * 全部反转回墨色, 移除原玻璃主题的"白字 + 黑阴影"
  * ============================================== */
