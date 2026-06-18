@@ -155,10 +155,10 @@ export default function InstancePage() {
           {/* 侧边: 像活页夹小笔记本, 顶端写 "Servers", 内部按分组手写章节 */}
           <div className="paper-card no-tilt w-full h-full overflow-hidden">
             <Flex direction="column" gap="0" className="h-full min-h-0">
-              <div className="px-4 py-3 shrink-0 border-b border-[var(--ink-line-soft)]">
+              <div className="px-4 py-2.5 shrink-0 border-b border-[var(--ink-line-soft)]">
                 <div className="eyebrow">Index</div>
                 <h2
-                  className="mt-1 text-base"
+                  className="mt-0.5 text-base"
                   style={{
                     fontFamily: "var(--font-serif)",
                     fontWeight: 600,
@@ -172,7 +172,7 @@ export default function InstancePage() {
                 {groupedNodes.map((group, groupIndex) => (
                   <div key={groupIndex}>
                     <div
-                      className="eyebrow px-3 pt-3 pb-1 sticky top-0 z-10"
+                      className="eyebrow px-3 pt-2 pb-1 sticky top-0 z-10"
                       style={{
                         background: "var(--paper-cool)",
                         borderBottom: "1px solid var(--ink-line-soft)",
@@ -185,7 +185,7 @@ export default function InstancePage() {
                         <div
                           key={node.uuid}
                           onClick={() => navigate(`/instance/${node.uuid}`)}
-                          className={`instance-sidebar-item mx-1 my-0.5 px-2 py-1 cursor-pointer transition-colors text-sm flex items-center gap-2 ${
+                          className={`instance-sidebar-item mx-1 my-px px-2 py-1 cursor-pointer transition-colors text-sm flex items-center gap-2 ${
                             node.uuid === uuid ? "active font-semibold" : ""
                           }`}
                           style={{
@@ -209,8 +209,8 @@ export default function InstancePage() {
       )}
       {/* 主区: 自身内部滚动, 顶部头卡 + tab + 图表区 */}
       <div className="flex-1 min-w-0 h-full overflow-y-auto overscroll-contain pr-1">
-        <div className="flex flex-col items-center gap-3 pb-4">
-          <div className="paper-card no-tilt w-full flex flex-col gap-2.5 p-5">
+        <div className="flex flex-col items-center gap-2.5 pb-3">
+          <div className="paper-card no-tilt w-full flex flex-col gap-2 p-4">
             <div className="eyebrow">Server</div>
             <h1 className="flex items-baseline flex-wrap gap-3 m-0">
               <Flag flag={node?.region ?? ""} />

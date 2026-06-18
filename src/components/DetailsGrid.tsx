@@ -3,6 +3,7 @@ import { useNodeList } from "@/contexts/NodeListContext";
 import { useLiveData } from "@/contexts/LiveDataContext";
 import { formatUptime } from "./Node";
 import { formatBytes } from "@/utils/unitHelper";
+import { computeTrafficUsage } from "@/utils/trafficHelper";
 import UsageBar from "./UsageBar";
 
 type DetailsGridProps = {
@@ -12,42 +13,119 @@ type DetailsGridProps = {
 };
 
 /**
- * 单个实时指标格: 标签 + 值同行 + bar 槽 + sub 槽
- * bar / sub 即使为空也占固定高度, 保证同行各格等高、网格严格对齐
+ * 数据块外壳: 每个指标自成一格 (冷调副纸凹陷 + 软描边),
+ * 用底色+边框做卡间分隔, 取代原先"裸格子靠间距区分"的弱层次
  */
-function MetricCell({
+function MetricBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="node-metric-block flex flex-col gap-1 min-w-0 px-2.5! py-2!">
+      {children}
+    </div>
+  );
+}
+
+/**
+ * 带进度条指标 (CPU/RAM/DISK/SWAP/GPU):
+ * 标签 → 满宽进度条 (视觉锚) → 百分比(主) + 已用/总量(弱) 同基线一行
+ * 进度条承担信息量, 不再是 sub 上方那条被压扁的细槽
+ */
+function BarCell({
+  label,
+  percent,
+  detail,
+}: {
+  label: string;
+  percent: number;
+  detail?: string;
+}) {
+  return (
+    <MetricBox>
+      <span className="eyebrow truncate">{label}</span>
+      <UsageBar value={percent} label="" compact />
+      <div className="flex items-baseline justify-between gap-2 min-w-0">
+        <span className="font-mono font-tabular font-semibold text-sm shrink-0">
+          {percent.toFixed(1)}%
+        </span>
+        <span
+          className="font-mono text-[11px] truncate text-right"
+          style={{ color: "var(--ink-mute)" }}
+          title={detail}
+        >
+          {detail ?? ""}
+        </span>
+      </div>
+    </MetricBox>
+  );
+}
+
+/**
+ * 上下行对称指标 (网速 / 总流量):
+ * ↑ 与 ↓ 等权, 同一行横排放下 (标签一行 + 内容一行, 共两行)
+ */
+function DualCell({
+  label,
+  up,
+  down,
+}: {
+  label: string;
+  up: string;
+  down: string;
+}) {
+  return (
+    <MetricBox>
+      <span className="eyebrow truncate">{label}</span>
+      <div className="flex items-baseline gap-3 font-mono font-tabular font-semibold text-sm min-w-0">
+        <span className="flex items-baseline gap-1 min-w-0 truncate">
+          <span className="text-xs shrink-0" style={{ color: "var(--ink-mute)" }}>
+            ↑
+          </span>
+          {up}
+        </span>
+        <span className="flex items-baseline gap-1 min-w-0 truncate">
+          <span className="text-xs shrink-0" style={{ color: "var(--ink-mute)" }}>
+            ↓
+          </span>
+          {down}
+        </span>
+      </div>
+    </MetricBox>
+  );
+}
+
+/**
+ * 纯标量指标 (负载 / 连接·进程 / 在线时长):
+ * 标签一行 + 内容一行 (共两行); 主值与补充说明同一行横排, 不竖向铺三段
+ */
+function StatCell({
   label,
   value,
   sub,
-  percent,
 }: {
   label: string;
   value: string;
   sub?: string;
-  percent?: number;
 }) {
   return (
-    <div className="min-w-0">
-      <div className="flex items-baseline justify-between gap-1 min-w-0">
-        <span className="eyebrow truncate">{label}</span>
-        <span className="font-mono font-tabular font-semibold text-sm shrink-0">
+    <MetricBox>
+      <span className="eyebrow truncate">{label}</span>
+      <div className="flex items-baseline gap-2 min-w-0">
+        <span
+          className="font-mono font-tabular font-semibold text-sm shrink-0"
+          title={value}
+        >
           {value}
         </span>
-      </div>
-      {/* bar 槽: 固定高度, 无 percent 时空占位保持对齐 */}
-      <div className="h-1.25 mt-1.5">
-        {typeof percent === "number" && (
-          <UsageBar value={percent} label="" compact />
+        {sub && (
+          <span
+            className="font-mono text-[11px] truncate"
+            style={{ color: "var(--ink-mute)" }}
+            title={sub}
+          >
+            {sub}
+          </span>
         )}
       </div>
-      {/* sub 槽: 固定一行高度 */}
-      <div
-        className="font-mono text-[11px] mt-1 h-3.5 truncate"
-        style={{ color: "var(--ink-mute)" }}
-      >
-        {sub ?? ""}
-      </div>
-    </div>
+    </MetricBox>
   );
 }
 
@@ -86,72 +164,83 @@ export const DetailsGrid = ({ uuid }: DetailsGridProps) => {
   const swapPercent =
     node?.swap_total && live ? (live.swap.used / node.swap_total) * 100 : 0;
 
+  // 流量用量: 有限额时按 type 折成已用/限额比例, 无限额退回累计总量展示
+  const traffic = computeTrafficUsage(
+    node,
+    live?.network.totalUp ?? 0,
+    live?.network.totalDown ?? 0,
+  );
+
   const gpus = live?.gpu?.detailed_info ?? [];
 
   return (
-    <div className="DetailsGrid w-full flex flex-col gap-3">
+    <div className="DetailsGrid w-full flex flex-col gap-2">
       {/* 实时指标 */}
       <div>
         <div className="eyebrow mb-1.5" style={{ color: "var(--ink-mute)" }}>
           Live
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-5 gap-y-2.5">
-          <MetricCell
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+          <BarCell
             label={t("nodeCard.cpu")}
-            value={`${(live?.cpu.usage ?? 0).toFixed(1)}%`}
             percent={live?.cpu.usage ?? 0}
           />
-          <MetricCell
+          <BarCell
             label={t("nodeCard.ram")}
-            value={`${memPercent.toFixed(1)}%`}
-            sub={
+            percent={memPercent}
+            detail={
               node?.mem_total
                 ? `${formatBytes(live?.ram.used ?? 0)} / ${formatBytes(node.mem_total)}`
-                : "-"
+                : undefined
             }
-            percent={memPercent}
           />
-          <MetricCell
+          <BarCell
             label={t("nodeCard.disk")}
-            value={`${diskPercent.toFixed(1)}%`}
-            sub={
+            percent={diskPercent}
+            detail={
               node?.disk_total
                 ? `${formatBytes(live?.disk.used ?? 0)} / ${formatBytes(node.disk_total)}`
+                : undefined
+            }
+          />
+          <BarCell
+            label={t("nodeCard.swap")}
+            percent={swapPercent}
+            detail={
+              node?.swap_total
+                ? `${formatBytes(live?.swap.used ?? 0)} / ${formatBytes(node.swap_total)}`
                 : "-"
             }
-            percent={diskPercent}
           />
-          {node?.swap_total ? (
-            <MetricCell
-              label={t("nodeCard.swap")}
-              value={`${swapPercent.toFixed(1)}%`}
-              sub={`${formatBytes(live?.swap.used ?? 0)} / ${formatBytes(node.swap_total)}`}
-              percent={swapPercent}
+          <DualCell
+            label={t("nodeCard.networkSpeed")}
+            up={`${formatBytes(live?.network.up ?? 0)}/s`}
+            down={`${formatBytes(live?.network.down ?? 0)}/s`}
+          />
+          {traffic.hasLimit ? (
+            <BarCell
+              label={t("nodeCard.totalTraffic")}
+              percent={traffic.percent}
+              detail={`${formatBytes(traffic.used)} / ${formatBytes(traffic.limit)}`}
             />
           ) : (
-            <MetricCell label={t("nodeCard.swap")} value="-" />
+            <DualCell
+              label={t("nodeCard.totalTraffic")}
+              up={formatBytes(live?.network.totalUp ?? 0)}
+              down={formatBytes(live?.network.totalDown ?? 0)}
+            />
           )}
-          <MetricCell
-            label={t("nodeCard.networkSpeed")}
-            value={`↑ ${formatBytes(live?.network.up ?? 0)}/s`}
-            sub={`↓ ${formatBytes(live?.network.down ?? 0)}/s`}
-          />
-          <MetricCell
-            label={t("nodeCard.totalTraffic")}
-            value={`↑ ${formatBytes(live?.network.totalUp ?? 0)}`}
-            sub={`↓ ${formatBytes(live?.network.totalDown ?? 0)}`}
-          />
-          <MetricCell
+          <StatCell
             label={t("nodeCard.load")}
             value={(live?.load.load1 ?? 0).toFixed(2)}
             sub={`${(live?.load.load5 ?? 0).toFixed(2)} / ${(live?.load.load15 ?? 0).toFixed(2)}`}
           />
-          <MetricCell
+          <StatCell
             label="Conn / Proc"
             value={`${live?.connections.tcp ?? 0} · ${live?.connections.udp ?? 0}`}
             sub={`TCP·UDP · ${live?.process ?? 0} proc`}
           />
-          <MetricCell
+          <StatCell
             label={t("nodeCard.uptime")}
             value={live?.uptime ? formatUptime(live.uptime, t) : "-"}
           />
@@ -164,19 +253,18 @@ export const DetailsGrid = ({ uuid }: DetailsGridProps) => {
           <div className="eyebrow mb-1.5" style={{ color: "var(--ink-mute)" }}>
             GPU
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {gpus.map((gpu, idx) => {
               const gMemPercent =
                 gpu.memory_total > 0
                   ? (gpu.memory_used / gpu.memory_total) * 100
                   : 0;
               return (
-                <MetricCell
+                <BarCell
                   key={`gpu-${idx}`}
                   label={`${gpu.name || "GPU"}${gpus.length > 1 ? ` #${idx + 1}` : ""}`}
-                  value={`${gpu.utilization.toFixed(1)}%`}
-                  sub={`${gpu.memory_total > 0 ? `${formatBytes(gpu.memory_used)} / ${formatBytes(gpu.memory_total)} (${gMemPercent.toFixed(0)}%)` : "-"} · ${gpu.temperature > 0 ? `${gpu.temperature.toFixed(0)}°C` : "-"}`}
                   percent={gpu.utilization}
+                  detail={`${gpu.memory_total > 0 ? `${formatBytes(gpu.memory_used)} / ${formatBytes(gpu.memory_total)} (${gMemPercent.toFixed(0)}%)` : "-"} · ${gpu.temperature > 0 ? `${gpu.temperature.toFixed(0)}°C` : "-"}`}
                 />
               );
             })}
@@ -191,7 +279,7 @@ export const DetailsGrid = ({ uuid }: DetailsGridProps) => {
         <div className="eyebrow mb-1.5" style={{ color: "var(--ink-mute)" }}>
           Spec
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-2">
           <SpecCell
             label={t("nodeCard.cpu")}
             value={`${node?.cpu_name ?? "Unknown"}${node?.cpu_cores ? ` (×${node.cpu_cores})` : ""}`}

@@ -12,7 +12,7 @@ const IndexLayout = () => {
       <div className="layout flex flex-col w-full min-h-screen relative">
         <DynamicBackground />
         <SmoothScroll />
-        <main className="main-content w-full px-3 md:px-4 pb-8 relative z-10 flex-1">
+        <main className="main-content w-full px-3 md:px-4 relative z-10 flex-1">
           {/* NavBar 与内容同宽居中 (固定 1536px), 各路由自己决定内容宽度 */}
           <div className="w-full max-w-384 mx-auto">
             <NavBar />

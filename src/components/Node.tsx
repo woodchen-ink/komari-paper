@@ -8,6 +8,7 @@ import type { LiveData, Record } from "../types/LiveData";
 import type { NodeBasicInfo } from "@/contexts/NodeListContext";
 import { usePublicInfo } from "@/contexts/PublicInfoContext";
 import { formatBytes } from "@/utils/unitHelper";
+import { computeTrafficUsage, usageColor } from "@/utils/trafficHelper";
 import { getOSImage, getOSName } from "@/utils";
 
 import UsageBar from "./UsageBar";
@@ -105,6 +106,13 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
 
   const upSpeed = formatSpeed(liveData.network.up);
   const downSpeed = formatSpeed(liveData.network.down);
+
+  // 流量限额用量: 有限额时在 Traffic 标签行右侧显示占比 (阈值色), 无限额显示占位
+  const traffic = computeTrafficUsage(
+    basic,
+    liveData.network.totalUp,
+    liveData.network.totalDown,
+  );
 
   const showIpTags = publicInfo?.theme_settings?.showIpTagsInCard;
   const ipVersionTag = basic.ipv4 && basic.ipv6 ? "V10" : basic.ipv4 ? "V4" : basic.ipv6 ? "V6" : "";
@@ -286,7 +294,25 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
             </div>
           </div>
           <div className="min-w-0">
-            <div className="eyebrow">Traffic</div>
+            <div className="flex items-baseline justify-between gap-1">
+              <span className="eyebrow">Traffic</span>
+              {traffic.hasLimit ? (
+                <span
+                  className="font-semibold shrink-0"
+                  style={{ color: usageColor(traffic.percent) }}
+                  title={`${formatBytes(traffic.used)} / ${formatBytes(traffic.limit)}`}
+                >
+                  {traffic.percent.toFixed(0)}%
+                </span>
+              ) : (
+                <span
+                  className="font-hand shrink-0 text-sm leading-none"
+                  style={{ color: "var(--ink-mute)" }}
+                >
+                  {t("nodeCard.unlimited", "Unlimited")}
+                </span>
+              )}
+            </div>
             <div className="flex gap-2 mt-0.5">
               <span className="truncate">↑ {formatBytes(liveData.network.totalUp)}</span>
               <span className="truncate">↓ {formatBytes(liveData.network.totalDown)}</span>

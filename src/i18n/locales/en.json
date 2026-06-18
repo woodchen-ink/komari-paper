@@ -393,6 +393,7 @@
     "totalNodes": "{{total}} servers total, {{online}} online",
     "totalTraffic": "Traffic",
     "totalUpload": "Total Upload",
+    "unlimited": "Unlimited",
     "uptime": "Uptime",
     "virtualization": "Virtualization"
   },
