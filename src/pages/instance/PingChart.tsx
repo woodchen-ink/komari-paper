@@ -63,6 +63,8 @@ const PingChart = ({ uuid }: { uuid: string }) => {
     { label: t("chart.hours", { count: 6 }), hours: 6 },
     { label: t("chart.hours", { count: 12 }), hours: 12 },
     { label: t("chart.days", { count: 1 }), hours: 24 },
+    { label: t("chart.days", { count: 3 }), hours: 72 },
+    { label: t("chart.days", { count: 7 }), hours: 168 },
   ];
   const avaliableView: { label: string; hours?: number }[] = [];
   if (
@@ -240,10 +242,17 @@ const PingChart = ({ uuid }: { uuid: string }) => {
     // 数据驱动：每条线使用“中位采样间隔 * 倍数（默认6）”作为最大插值跨度，并钳制在 [2min, 30min]。
     if (tasks.length > 0 && full.length > 0) {
       const keys = tasks.map((t) => String(t.id));
+      // 插值跨度上限随窗口自适应: 固定 30min 上限放到多天窗口会把绝大多数段判成空洞,
+      // 导致孤立有效点既不连线又不画点 (肉眼空白但 hover 有值)。
+      // 取窗口的 1/48 (1h→2min, 1d→30min, 7d→3.5h, 30d→15h), 钳到 [2min, 24h]。
+      const adaptiveMaxCapMs = Math.min(
+        24 * 60 * 60_000,
+        Math.max(2 * 60_000, Math.floor((hours * 3600_000) / 48))
+      );
       full = interpolateNullsLinear(full, keys, {
         maxGapMultiplier: 6,
         minCapMs: 2 * 60_000,
-        maxCapMs: 30 * 60_000,
+        maxCapMs: adaptiveMaxCapMs,
       });
     }
     return full;

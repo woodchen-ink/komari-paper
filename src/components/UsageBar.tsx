@@ -13,14 +13,27 @@ const UsageBar = React.memo(
     // Ensure value is between 0 and 100
     const clampedValue = Math.min(Math.max(value, 0), max);
 
-    // 阈值色: 红 (危险) / 橙 (警示) / 默认墨色 (正常, 不抢眼)
+    // 阈值色: 红 (危险≥80) / 赭黄 (警示≥60) / 苔绿 (正常)
+    // 注: --pen-amber 等笔色已从主题删除, 改用现存数据色环 token, 否则未定义变量会回退成墨黑
     const getColor = (val: number) => {
       if (val >= 80) return "var(--pen-red)";
-      if (val >= 60) return "var(--pen-amber)";
-      return "var(--ink)";
+      if (val >= 60) return "var(--data-3)";
+      return "var(--data-2)";
     };
     const barColor = getColor(clampedValue);
     const trackBg = "rgba(42, 38, 34, 0.10)";
+    // 占比百分数 (相对轨道宽度)
+    const fillPercent = (clampedValue / max) * 100;
+    // 非零用量给 2px 最小可见宽度: 低值时彩条占比不足 1px 会肉眼不可见,
+    // 叠加 width 过渡会出现"彩色填充消失一会儿"的观感, 用 min-width 兜底
+    const fillStyle = {
+      height: "100%",
+      backgroundColor: barColor,
+      borderRadius: 0,
+      width: `${fillPercent}%`,
+      minWidth: fillPercent > 0 ? "2px" : 0,
+      transition: "width 0.35s ease-out",
+    } as const;
 
     if (compact) {
       return (
@@ -33,15 +46,7 @@ const UsageBar = React.memo(
             overflow: "hidden",
           }}
         >
-          <div
-            style={{
-              height: "100%",
-              backgroundColor: barColor,
-              borderRadius: 0,
-              width: `${clampedValue}%`,
-              transition: "width 0.5s ease-out",
-            }}
-          />
+          <div style={fillStyle} />
         </Box>
       );
     }
