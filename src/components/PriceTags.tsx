@@ -80,6 +80,7 @@ const PriceTags = ({
   ip4 = "",
   ip6 = "",
   layout = "flow",
+  showPrice = true,
   ...props
 }: {
   expired_at?: string | number;
@@ -90,6 +91,7 @@ const PriceTags = ({
   ip4?: unknown;
   ip6?: unknown;
   layout?: "flow" | "grid2";
+  showPrice?: boolean; // false 时只渲染自定义 tags, 价格/到期交给 BillingBar
 } & React.ComponentProps<typeof Flex>) => {
   const [t] = useTranslation();
 
@@ -101,7 +103,7 @@ const PriceTags = ({
       color: "green",
     });
   }
-  if (price !== 0) {
+  if (showPrice && price !== 0) {
     const billing = getBillingText(price, billing_cycle, currency, t);
     items.push({ text: billing, color: "iris", title: billing });
     const expiry = getExpiry(expired_at, t);

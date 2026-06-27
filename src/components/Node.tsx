@@ -15,6 +15,7 @@ import UsageBar from "./UsageBar";
 import Flag from "./Flag";
 import Tips from "./ui/tips";
 import PriceTags from "./PriceTags";
+import BillingBar from "./BillingBar";
 import MiniBars from "./MiniBars";
 import { useNodePing } from "@/hooks/useNodePing";
 
@@ -372,6 +373,14 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
           </div>
         </div>
 
+        {/* 价格 + 到期剩余进度条 (取代底部 badge, 紧贴脚注上方作为元信息) */}
+        <BillingBar
+          price={basic.price}
+          billing_cycle={basic.billing_cycle}
+          expired_at={basic.expired_at}
+          currency={basic.currency}
+        />
+
         {/* 三级 · 脚注: 连接/进程/uptime + OS·arch·CPU, 淡色小字, 不抢视线 */}
         <div className="node-card-meta flex flex-col gap-0.5 text-[11px] min-w-0">
           <div className="flex items-center justify-between gap-2 font-mono min-w-0">
@@ -408,17 +417,12 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
           </div>
         </div>
 
-        {/* 价格 / 标签: 每行 2 个固定宽 + truncate + title */}
-        <div className="mt-auto pt-1">
-          <PriceTags
-            layout="grid2"
-            price={basic.price}
-            billing_cycle={basic.billing_cycle}
-            expired_at={basic.expired_at}
-            currency={basic.currency}
-            tags={basic.tags || ""}
-          />
-        </div>
+        {/* 标签: 每行 2 个固定宽 + truncate + title (价格/到期已移到 BillingBar); 无 tags 不占位 */}
+        {basic.tags && basic.tags.trim() !== "" && (
+          <div className="mt-auto pt-1">
+            <PriceTags layout="grid2" showPrice={false} tags={basic.tags} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -72,10 +72,11 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/components/DynamicBackground.tsx`: 极简, 仅渲染极淡 vignette + 用户自定义背景图 (sepia + multiply 半透明叠层, "夹照片"风格); 不再画咖啡渍 / 墨点
 - `src/components/Node.tsx`: 便签风格紧凑节点卡 (`paper-card + node-card`), 信息密度高且分三级层次; `NodeGrid` 响应式网格 (手机 1 / 平板 2 / 笔记本 3 / 大屏 `2xl` 4 列, `items-stretch` 同行等高)
   - **三级信息层次** (靠底色分层 + 字阶, 不堆边框): ① 资源块 (`.node-metric-block` 冷调副纸凹陷, 视觉重心) ② 网络/健康 (主纸平铺墨色) ③ 脚注 (`.node-card-meta` 淡色 + 顶部细线)
-  - 卡内结构 (在线): 头 (旗 + 名 Fraunces 600/opsz48 + `#group` 红铅笔批注) → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + mono 数值 + `UsageBar compact` + 已用/总量小字) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → **健康 2 列** (延迟 / 丢包, 数字带阈值色 + `MiniBars` 迷你柱图) → **脚注** (TCP·UDP·进程 + uptime / OS·arch·CPU型号, truncate + title) → `PriceTags layout="grid2"`
-  - 卡片 `flex flex-col h-full gap-2.5` + 价格区 `mt-auto`, 保证网格同行等高
+  - 卡内结构 (在线): 头 (旗 + 名 Fraunces 600/opsz48 + `#group` 红铅笔批注) → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + mono 数值 + `UsageBar compact` + 已用/总量小字) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → **健康 2 列** (延迟 / 丢包, 数字带阈值色 + `MiniBars` 迷你柱图) → `BillingBar` (价格文本 + 到期剩余进度条) → **脚注** (TCP·UDP·进程 + uptime / OS·arch·CPU型号, truncate + title) → tags (`PriceTags layout="grid2" showPrice={false}`, 仅自定义 tags, 无 tags 不占位)
+  - 价格/到期不再走底部 badge: 改由 `BillingBar` 在脚注上方渲染 (价格 `Wallet` 图标 + 文本; 到期 = 已过周期占比进度条 + 剩余天数, 阈值色 ≤7 红 / ≤15 橙 / 其余绿; 免费/长期/一次性/无周期不画条)
+  - 卡片 `flex flex-col h-full gap-2.5`; tags 区 `mt-auto` (有 tags 才渲染), 网格同行等高靠 `items-stretch`
   - 负载基准: `load1 / cpu_cores` 折百分比驱动 bar; 多 ping task 取延迟最低的 task
-  - 离线: 红铅笔脉冲点 + 名 + 分组 + Caveat "offline" 批注 + 价格; ping 不拉取
+  - 离线: 红铅笔脉冲点 + 名 + 分组 + Caveat "offline" 批注 + 价格 (离线卡仍走 `PriceTags` 带价格); ping 不拉取
   - `formatUptime` 仍 export (被 `DetailsGrid` / `NodeTable` 引用)
 - `src/hooks/useNodePing.ts`: 便签卡 ping 数据 hook —— RPC2 `common:getRecords` 按 uuid 拉最近 1h, 汇总成 `{latest, loss, values[]}`
   - **控制首页 N 节点请求量**: 模块级 `cache` (同 uuid 多组件共享一份, 不重复请求) + 60s 节流 + 按 uuid 错峰 0~800ms 首拉 + 离线节点 `enabled=false` 不拉
@@ -85,7 +86,8 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - Live: CPU/内存/磁盘/swap (% + 已用/总量 + bar) + 网速 + 总流量 + 负载 1/5/15 + 连接/进程 + uptime
   - GPU: 有才显示, 每块利用率 + 显存 + 温度; Spec: CPU型号·核心 / arch / 虚拟化 / GPU名 / OS / 内核 / 最后更新
   - 便签卡收紧后, 流量/连接/负载/swap/CPU用量/内存磁盘明细/GPU 的**完整数据全在此查看**
-- `src/components/PriceTags.tsx`: 价格/到期/标签徽章组, `layout` prop —— `"flow"` (默认, Flex 自由换行, 表格/admin 用) / `"grid2"` (每行 2 个定宽 + truncate + title, 便签卡用)
+- `src/components/PriceTags.tsx`: 价格/到期/标签徽章组, `layout` prop —— `"flow"` (默认, Flex 自由换行, 表格/admin 用) / `"grid2"` (每行 2 个定宽 + truncate + title, 便签卡用); `showPrice` prop —— `false` 时只渲染自定义 tags, 价格/到期交给 `BillingBar` (便签卡在线卡用)
+- `src/components/BillingBar.tsx`: 便签卡价格 + 到期剩余进度条 (取代底部价格/到期 badge), 价格 `Wallet` 图标 + 文本, 到期 = 已过周期占比纯 div 进度条 + 剩余天数文本 (阈值色与 PriceTags 到期分级一致); `price===0` 不渲染, 免费/长期/一次性/无有效周期只出文本不画条
 - `src/components/NodeDisplay.tsx`:
   - 顶部章节: `eyebrow Fleet` + Fraunces 大号 H2 "Servers" + 右侧 mono 计数 (像杂志页眉)
   - 搜索框: 仅底部 1px 细线, focus 加红
