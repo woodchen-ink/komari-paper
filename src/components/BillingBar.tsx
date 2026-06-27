@@ -48,29 +48,35 @@ const BillingBar = ({
       ? t("common.free")
       : `${currency}${price}/${getCycleText(billing_cycle, t)}`;
 
-  // 到期计算: 剩余天数 + 已用周期占比
+  // 到期计算: 剩余天数 (进度条用剩余充裕度, 见下方 fillPercent)
   const diffDays = Math.ceil(
     (new Date(expired_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
   );
   const isLongTerm = diffDays > 36500;
-  // 周期天数: 计费周期为有效正数时用作进度条分母, 否则不画条
+  // 进度条分母: 一个计费周期天数 (有效正数才画条); 无周期 (一次性/未知) 不画条
   const cycleDays = billing_cycle > 0 ? billing_cycle : null;
-  const showBar = !isLongTerm && diffDays > 0 && cycleDays !== null;
+  // 长期: 画七彩满条; 普通: 有有效周期且未过期才画条
+  const showBar = isLongTerm || (diffDays > 0 && cycleDays !== null);
 
-  // 已过周期占比 (0~100): 剩余越少占比越高
-  const elapsedPercent = showBar
-    ? Math.min(100, Math.max(0, ((cycleDays! - diffDays) / cycleDays!) * 100))
-    : 0;
+  // 填充 = 剩余时间的充裕度: 剩余占一个计费周期的比例, 剩余 ≥ 一个周期即满条。
+  // 注: 拿不到本期续费起点, 故不画"已过占比"(会因周期<剩余天数而恒空), 改画"剩余充裕度"。
+  const fillPercent = isLongTerm
+    ? 100
+    : cycleDays !== null
+      ? Math.min(100, Math.max(0, (diffDays / cycleDays) * 100))
+      : 0;
 
-  // 阈值色: 与 PriceTags 到期分级一致
-  const expiryColor =
-    diffDays <= 0
+  // 阈值色: 按剩余充裕度百分比分档, 与进度条长度一致 (≤15% 红 / ≤30% 橙 / 其余绿)
+  // 已过期 fillPercent=0 落入红; 长期 fillPercent=100 落入绿
+  // 无法算充裕度时 (有价格但无有效周期, 不画条) 文本用中性墨色, 不误判为红
+  const canRate = isLongTerm || cycleDays !== null;
+  const expiryColor = !canRate
+    ? "var(--ink-mute)"
+    : fillPercent <= 15
       ? "var(--pen-red)"
-      : diffDays <= 7
-        ? "var(--pen-red)"
-        : diffDays <= 15
-          ? "var(--data-3)"
-          : "var(--data-2)";
+      : fillPercent <= 30
+        ? "var(--data-3)"
+        : "var(--data-2)";
 
   const expiryText =
     diffDays <= 0
@@ -106,9 +112,12 @@ const BillingBar = ({
           <div
             style={{
               height: "100%",
-              width: `${elapsedPercent}%`,
-              minWidth: elapsedPercent > 0 ? "2px" : 0,
-              backgroundColor: expiryColor,
+              width: `${fillPercent}%`,
+              minWidth: fillPercent > 0 ? "2px" : 0,
+              // 长期: 明亮七彩渐变满条 (czl-code-skill §1.7.2 调色板); 普通: 单色阈值条
+              background: isLongTerm
+                ? "linear-gradient(90deg, var(--chart-bright-1), var(--chart-bright-2), var(--chart-bright-3), var(--chart-bright-6), var(--chart-bright-3), var(--chart-bright-5), var(--chart-bright-4))"
+                : expiryColor,
               transition: "width 0.35s ease-out",
             }}
           />

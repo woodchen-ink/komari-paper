@@ -419,7 +419,7 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
 
         {/* 标签: 每行 2 个固定宽 + truncate + title (价格/到期已移到 BillingBar); 无 tags 不占位 */}
         {basic.tags && basic.tags.trim() !== "" && (
-          <div className="mt-auto pt-1">
+          <div className="-mt-1">
             <PriceTags layout="grid2" showPrice={false} tags={basic.tags} />
           </div>
         )}

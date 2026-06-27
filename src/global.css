@@ -117,6 +117,15 @@
   --data-4: #6a3a7a;            /* 紫 */
   --data-5: #b8331b;            /* 朱红 */
 
+  /* 明亮七彩 — 取自 czl-code-skill §1.7.2 定性调色板 (明亮模式),
+     用于"长期"到期满条等需鲜活观感处; 鲜活不刺眼, 暖色通透不发土 */
+  --chart-bright-1: #3975e0;   /* 钴蓝 */
+  --chart-bright-2: #4caf33;   /* 翠绿 */
+  --chart-bright-3: #f58d31;   /* 暖橙 */
+  --chart-bright-4: #7256d4;   /* 紫罗兰 */
+  --chart-bright-5: #e3496f;   /* 玫粉 */
+  --chart-bright-6: #ecb333;   /* 金黄 */
+
   --background: var(--paper);
   --foreground: var(--ink);
   --card: var(--paper-card);
