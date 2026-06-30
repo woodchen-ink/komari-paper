@@ -167,11 +167,11 @@ export const DetailsGrid = ({ uuid }: DetailsGridProps) => {
     node?.disk_total && live ? (live.disk.used / node.disk_total) * 100 : 0;
   const swapPercent =
     node?.swap_total && live ? (live.swap.used / node.swap_total) * 100 : 0;
-  // 负载折算: load1 相对 CPU 核心数 (≈100% 表示满载), 与便签卡同口径
-  const loadPercent =
-    node?.cpu_cores && live
-      ? Math.min((live.load.load1 / node.cpu_cores) * 100, 100)
-      : 0;
+  // 负载基准: load1 相对 CPU 核心数 (100% 表示满载)
+  // loadRatio 不封顶用于文字, loadPercent 封顶后仅用于进度条
+  const loadRatio =
+    node?.cpu_cores && live ? (live.load.load1 / node.cpu_cores) * 100 : 0;
+  const loadPercent = Math.min(loadRatio, 100);
 
   // 流量用量: 有限额时按 type 折成已用/限额比例, 无限额退回累计总量展示
   const traffic = computeTrafficUsage(
@@ -243,7 +243,7 @@ export const DetailsGrid = ({ uuid }: DetailsGridProps) => {
             label={t("nodeCard.load")}
             value={(live?.load.load1 ?? 0).toFixed(2)}
             bar={loadPercent}
-            sub={`${loadPercent.toFixed(0)}% · ${(live?.load.load5 ?? 0).toFixed(2)} / ${(live?.load.load15 ?? 0).toFixed(2)}`}
+            sub={`${loadRatio.toFixed(0)}% · ${(live?.load.load5 ?? 0).toFixed(2)} / ${(live?.load.load15 ?? 0).toFixed(2)}`}
           />
           <StatCell
             label="Conn / Proc"

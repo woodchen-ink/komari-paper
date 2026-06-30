@@ -100,10 +100,13 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
   const diskUsagePercent = basic.disk_total
     ? (liveData.disk.used / basic.disk_total) * 100
     : 0;
-  // 负载基准: load1 相对 CPU 核心数 (≈1 表示满载)
-  const loadPercent = basic.cpu_cores
-    ? Math.min((liveData.load.load1 / basic.cpu_cores) * 100, 100)
+  // 负载基准: load1 相对 CPU 核心数 (100% 表示满载)
+  // loadRatio 不封顶, 用于文字 (过载时如 252% 才能传达过载程度)
+  // loadPercent 封顶 100%, 仅用于进度条 (避免画超出容器)
+  const loadRatio = basic.cpu_cores
+    ? (liveData.load.load1 / basic.cpu_cores) * 100
     : 0;
+  const loadPercent = Math.min(loadRatio, 100);
 
   const upSpeed = formatSpeed(liveData.network.up);
   const downSpeed = formatSpeed(liveData.network.down);
@@ -259,7 +262,7 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
               pct: loadPercent,
               value: liveData.load.load1.toFixed(2),
               // load1 折算成相对 CPU 核心数的百分比 + 5/15 分钟原始值
-              sub: `${loadPercent.toFixed(0)}% · ${liveData.load.load5.toFixed(1)}·${liveData.load.load15.toFixed(1)}`,
+              sub: `${loadRatio.toFixed(0)}% · ${liveData.load.load5.toFixed(1)}·${liveData.load.load15.toFixed(1)}`,
             },
           ].map((m) => (
             <div key={m.label} className="min-w-0">

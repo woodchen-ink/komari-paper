@@ -75,7 +75,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - 卡内结构 (在线): 头 (旗 + 名 Fraunces 600/opsz48 + `#group` 红铅笔批注) → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + mono 数值 + `UsageBar compact` + 已用/总量小字) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → **健康 2 列** (延迟 / 丢包, 数字带阈值色 + `MiniBars` 迷你柱图) → `BillingBar` (价格文本 + 到期剩余进度条) → **脚注** (TCP·UDP·进程 + uptime / OS·arch·CPU型号, truncate + title) → tags (`PriceTags layout="grid2" showPrice={false}`, 仅自定义 tags, 无 tags 不占位)
   - 价格/到期不再走底部 badge: 改由 `BillingBar` 在脚注上方渲染 (价格 `Wallet` 图标 + 文本; 到期 = 已过周期占比进度条 + 剩余天数, 阈值色 ≤7 红 / ≤15 橙 / 其余绿; 免费/长期/一次性/无周期不画条)
   - 卡片 `flex flex-col h-full gap-2.5`; tags 区 `mt-auto` (有 tags 才渲染), 网格同行等高靠 `items-stretch`
-  - 负载基准: `load1 / cpu_cores` 折百分比驱动 bar; 多 ping task 取延迟最低的 task
+  - 负载基准: `load1 / cpu_cores` 折百分比; 文字显示真实比例 (可超过 100%), 进度条按 100% 封顶; 多 ping task 取延迟最低的 task
   - 离线: 红铅笔脉冲点 + 名 + 分组 + Caveat "offline" 批注 + 价格 (离线卡仍走 `PriceTags` 带价格); ping 不拉取
   - `formatUptime` 仍 export (被 `DetailsGrid` / `NodeTable` 引用)
 - `src/hooks/useNodePing.ts`: 便签卡 ping 数据 hook —— RPC2 `common:getRecords` 按 uuid 拉最近 1h, 汇总成 `{latest, loss, values[]}`
@@ -84,6 +84,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/components/MiniBars.tsx`: 纯 CSS 迷你柱图 (不引 Recharts), 柱高 = 延迟相对峰值占比, 阈值色 (≤80 苔绿 `--data-2` / ≤200 赭黄 `--data-3` / 更高 + 丢包点红 `--pen-red`)
 - `src/components/DetailsGrid.tsx`: 单节点详情主信息区, 三段 (Live 实时指标 / GPU / Spec 静态规格)
   - Live: CPU/内存/磁盘/swap (% + 已用/总量 + bar) + 网速 + 总流量 + 负载 1/5/15 + 连接/进程 + uptime
+  - 负载详情与首页便签卡同口径: `load1 / cpu_cores` 的真实百分比用于文字, 进度条只显示 0-100% 范围
   - GPU: 有才显示, 每块利用率 + 显存 + 温度; Spec: CPU型号·核心 / arch / 虚拟化 / GPU名 / OS / 内核 / 最后更新
   - 便签卡收紧后, 流量/连接/负载/swap/CPU用量/内存磁盘明细/GPU 的**完整数据全在此查看**
 - `src/components/PriceTags.tsx`: 价格/到期/标签徽章组, `layout` prop —— `"flow"` (默认, Flex 自由换行, 表格/admin 用) / `"grid2"` (每行 2 个定宽 + truncate + title, 便签卡用); `showPrice` prop —— `false` 时只渲染自定义 tags, 价格/到期交给 `BillingBar` (便签卡在线卡用)
