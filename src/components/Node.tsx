@@ -258,7 +258,8 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
               label: t("nodeCard.load"),
               pct: loadPercent,
               value: liveData.load.load1.toFixed(2),
-              sub: `${liveData.load.load5.toFixed(1)}·${liveData.load.load15.toFixed(1)}`,
+              // load1 折算成相对 CPU 核心数的百分比 + 5/15 分钟原始值
+              sub: `${loadPercent.toFixed(0)}% · ${liveData.load.load5.toFixed(1)}·${liveData.load.load15.toFixed(1)}`,
             },
           ].map((m) => (
             <div key={m.label} className="min-w-0">

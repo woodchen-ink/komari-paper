@@ -100,14 +100,18 @@ function StatCell({
   label,
   value,
   sub,
+  bar,
 }: {
   label: string;
   value: string;
   sub?: string;
+  // 可选进度条 (负载折算百分比用); 不传则退化为纯标量格
+  bar?: number;
 }) {
   return (
     <MetricBox>
       <span className="eyebrow truncate">{label}</span>
+      {bar !== undefined && <UsageBar value={bar} label="" compact />}
       <div className="flex items-baseline gap-2 min-w-0">
         <span
           className="font-mono font-tabular font-semibold text-sm shrink-0"
@@ -163,6 +167,11 @@ export const DetailsGrid = ({ uuid }: DetailsGridProps) => {
     node?.disk_total && live ? (live.disk.used / node.disk_total) * 100 : 0;
   const swapPercent =
     node?.swap_total && live ? (live.swap.used / node.swap_total) * 100 : 0;
+  // 负载折算: load1 相对 CPU 核心数 (≈100% 表示满载), 与便签卡同口径
+  const loadPercent =
+    node?.cpu_cores && live
+      ? Math.min((live.load.load1 / node.cpu_cores) * 100, 100)
+      : 0;
 
   // 流量用量: 有限额时按 type 折成已用/限额比例, 无限额退回累计总量展示
   const traffic = computeTrafficUsage(
@@ -233,7 +242,8 @@ export const DetailsGrid = ({ uuid }: DetailsGridProps) => {
           <StatCell
             label={t("nodeCard.load")}
             value={(live?.load.load1 ?? 0).toFixed(2)}
-            sub={`${(live?.load.load5 ?? 0).toFixed(2)} / ${(live?.load.load15 ?? 0).toFixed(2)}`}
+            bar={loadPercent}
+            sub={`${loadPercent.toFixed(0)}% · ${(live?.load.load5 ?? 0).toFixed(2)} / ${(live?.load.load15 ?? 0).toFixed(2)}`}
           />
           <StatCell
             label="Conn / Proc"
