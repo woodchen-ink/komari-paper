@@ -21,7 +21,7 @@ function fmtTime(iso: string): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const MiniBars = ({ points, mode = "latency", good = 80, warn = 200 }: MiniBarsProps) => {
+const MiniBars = ({ points, mode = "latency", good = 100, warn = 300 }: MiniBarsProps) => {
   const [hover, setHover] = useState<number | null>(null);
 
   if (!points.length) {

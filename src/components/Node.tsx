@@ -340,9 +340,9 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
                   color:
                     ping?.latest == null
                       ? "var(--ink-mute)"
-                      : ping.latest <= 80
+                      : ping.latest <= 100
                         ? "var(--data-2)"
-                        : ping.latest <= 200
+                        : ping.latest <= 300
                           ? "var(--data-3)"
                           : "var(--pen-red)",
                 }}
@@ -352,7 +352,7 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
             </div>
             <MiniBars points={ping?.points ?? []} mode="latency" />
           </div>
-          {/* 丢包 (正常绿 / 丢包红) */}
+          {/* 丢包 (0 绿 / <5% 零星丢包黄 / ≥5% 持续丢包红), 与延迟分级同一套色阶 */}
           <div className="min-w-0">
             <div className="flex items-center justify-between gap-1 mb-1">
               <span className="flex items-center gap-1 eyebrow">
@@ -365,9 +365,11 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
                   color:
                     ping?.loss == null
                       ? "var(--ink-mute)"
-                      : ping.loss > 0
-                        ? "var(--pen-red)"
-                        : "var(--data-2)",
+                      : ping.loss === 0
+                        ? "var(--data-2)"
+                        : ping.loss < 5
+                          ? "var(--data-3)"
+                          : "var(--pen-red)",
                 }}
               >
                 {ping?.loss == null ? "—" : `${ping.loss.toFixed(1)}%`}

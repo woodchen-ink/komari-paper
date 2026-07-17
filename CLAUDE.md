@@ -72,7 +72,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/components/DynamicBackground.tsx`: 极简, 仅渲染极淡 vignette + 用户自定义背景图 (sepia + multiply 半透明叠层, "夹照片"风格); 不再画咖啡渍 / 墨点
 - `src/components/Node.tsx`: 便签风格紧凑节点卡 (`paper-card + node-card`), 信息密度高且分三级层次; `NodeGrid` 响应式网格 (手机 1 / 平板 2 / 笔记本 3 / 大屏 `2xl` 4 列, `items-stretch` 同行等高)
   - **三级信息层次** (靠底色分层 + 字阶, 不堆边框): ① 资源块 (`.node-metric-block` 冷调副纸凹陷, 视觉重心) ② 网络/健康 (主纸平铺墨色) ③ 脚注 (`.node-card-meta` 淡色 + 顶部细线)
-  - 卡内结构 (在线): 头 (旗 + 名 Fraunces 600/opsz48 + `#group` 红铅笔批注) → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + mono 数值 + `UsageBar compact` + 已用/总量小字) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → **健康 2 列** (延迟 / 丢包, 数字带阈值色 + `MiniBars` 迷你柱图) → `BillingBar` (价格文本 + 到期剩余进度条) → **脚注** (TCP·UDP·进程 + uptime / OS·arch·CPU型号, truncate + title) → tags (`PriceTags layout="grid2" showPrice={false}`, 仅自定义 tags, 无 tags 不占位)
+  - 卡内结构 (在线): 头 (旗 + 名 Fraunces 600/opsz48 + `#group` 红铅笔批注) → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + mono 数值 + `UsageBar compact` + 已用/总量小字) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → **健康 2 列** (延迟 / 丢包, 数字带阈值色 + `MiniBars` 迷你柱图; 延迟 ≤100 绿 / ≤300 黄 / 更高红, 丢包 0 绿 / <5% 黄 / ≥5% 红) → `BillingBar` (价格文本 + 到期剩余进度条) → **脚注** (TCP·UDP·进程 + uptime / OS·arch·CPU型号, truncate + title) → tags (`PriceTags layout="grid2" showPrice={false}`, 仅自定义 tags, 无 tags 不占位)
   - 价格/到期不再走底部 badge: 改由 `BillingBar` 在脚注上方渲染 (价格 `Wallet` 图标 + 文本; 到期 = 已过周期占比进度条 + 剩余天数, 阈值色 ≤7 红 / ≤15 橙 / 其余绿; 免费/长期/一次性/无周期不画条)
   - 卡片 `flex flex-col h-full gap-2.5`; tags 区 `mt-auto` (有 tags 才渲染), 网格同行等高靠 `items-stretch`
   - 负载基准: `load1 / cpu_cores` 折百分比; 文字显示真实比例 (可超过 100%), 进度条按 100% 封顶; 多 ping task 取延迟最低的 task
@@ -81,7 +81,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/hooks/useNodePing.ts`: 便签卡 ping 数据 hook —— RPC2 `common:getRecords` 按 uuid 拉最近 1h, 汇总成 `{latest, loss, values[]}`
   - **控制首页 N 节点请求量**: 模块级 `cache` (同 uuid 多组件共享一份, 不重复请求) + 60s 节流 + 按 uuid 错峰 0~800ms 首拉 + 离线节点 `enabled=false` 不拉
   - 多 task 取延迟最低者; 丢包率 = `value<0 计数 / 总计 × 100`; 失败/无数据返回 null 不阻塞
-- `src/components/MiniBars.tsx`: 纯 CSS 迷你柱图 (不引 Recharts), 柱高 = 延迟相对峰值占比, 阈值色 (≤80 苔绿 `--data-2` / ≤200 赭黄 `--data-3` / 更高 + 丢包点红 `--pen-red`)
+- `src/components/MiniBars.tsx`: 纯 CSS 迷你柱图 (不引 Recharts), 柱高 = 延迟相对峰值占比, 阈值色 (≤100 苔绿 `--data-2` / ≤300 赭黄 `--data-3` / 更高 + 丢包点红 `--pen-red`); 红色只留给真故障, 跨洋线路正常延迟 (150~280ms) 落在黄档, 避免与丢包红撞色
 - `src/components/DetailsGrid.tsx`: 单节点详情主信息区, 三段 (Live 实时指标 / GPU / Spec 静态规格)
   - Live: CPU/内存/磁盘/swap (% + 已用/总量 + bar) + 网速 + 总流量 + 负载 1/5/15 + 连接/进程 + uptime
   - 负载详情与首页便签卡同口径: `load1 / cpu_cores` 的真实百分比用于文字, 进度条只显示 0-100% 范围
