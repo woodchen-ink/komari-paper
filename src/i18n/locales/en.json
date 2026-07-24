@@ -300,7 +300,7 @@
     "overview": "Overview",
     "regions": "{{count}} regions",
     "monthly_cost": "Monthly",
-    "remaining": "Remaining {{value}}"
+    "yearly": "≈ {{value}} / year"
   },
   "delete": "Delete",
   "exec": {

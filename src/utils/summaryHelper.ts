@@ -81,50 +81,35 @@ export type FinanceTotals = {
   paidCount: number;
   /** 月均成本 (CNY): price 按 billing_cycle 折到 30 天后求和 */
   monthlyCNY: number;
-  /** 总价值 (CNY): 各节点单周期价格折算后求和 */
-  totalCNY: number;
-  /** 剩余价值 (CNY): price 按 expired_at 距今天数 / billing_cycle 比例 */
-  remainingCNY: number;
+  /** 年成本估算 (CNY): 月均 × 12, 直观反映按当前月付水平一年的支出 */
+  yearlyCNY: number;
 };
 
 /**
- * 汇总月成本 / 总价值 / 剩余价值, 全部折算成 CNY 后求和.
+ * 汇总月成本 / 年成本估算, 折算成 CNY 后求和.
  * - price <= 0 (免费 / 未设) 跳过
- * - billing_cycle <= 0 视为一次性, 不参与月均折算 (但计入总价值)
+ * - billing_cycle <= 0 视为一次性, 不参与月均折算
  * - rates: 当日汇率 (1 CNY = N 外币); 折算见 exchangeRate.toCNY
  */
 export function computeFinance(
   nodes: NodeBasicInfo[],
   rates: ExchangeRates,
 ): FinanceTotals {
-  const now = Date.now();
   let paidCount = 0;
   let monthlyCNY = 0;
-  let totalCNY = 0;
-  let remainingCNY = 0;
 
   for (const n of nodes) {
     if (!n.price || n.price <= 0) continue;
     paidCount++;
 
-    const priceCNY = toCNY(n.price, n.currency, rates);
-    totalCNY += priceCNY;
-
     const cycle = n.billing_cycle;
     if (cycle && cycle > 0) {
+      const priceCNY = toCNY(n.price, n.currency, rates);
       monthlyCNY += (priceCNY / cycle) * MONTH_DAYS;
-
-      // 剩余价值: 距过期天数占一个计费周期的比例 × 单周期价格, 上限一个周期
-      const expMs = n.expired_at ? new Date(n.expired_at).getTime() : 0;
-      if (expMs > now) {
-        const daysLeft = (expMs - now) / (1000 * 60 * 60 * 24);
-        const ratio = Math.min(daysLeft / cycle, 1);
-        remainingCNY += priceCNY * ratio;
-      }
     }
   }
 
-  return { paidCount, monthlyCNY, totalCNY, remainingCNY };
+  return { paidCount, monthlyCNY, yearlyCNY: monthlyCNY * 12 };
 }
 
 /** CNY 金额格式化: 千分位 + 2 位小数, 前缀人民币符号 */

@@ -101,8 +101,8 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - `eyebrow Overview` 章节标题 + 指标卡网格 (移动 2 列 / 平板 3 列 / 桌面 6 列): 在线节点 (走 `CountUp`) / 内存用量% / 磁盘用量% / 总流量↑↓ / 实时网速↑↓ / 月成本 (有计费节点才显示)
   - 每张卡: `eyebrow` 标签 + lucide 图标 + mono tabular 大号数值 + 副信息; 全部 `.no-tilt`
   - 下方地区概览条: 报刊式横排, 旗帜 + 在线计数 + 细竖线分隔
-  - 派生计算全部在 `src/utils/summaryHelper.ts` (在线/地区数 / 内存磁盘求和 / 网络求和 / 财务); 月成本按 `billing_cycle` 折到 30 天, 剩余价值按距 `expired_at` 天数比例
-  - 财务**经汇率折算成 CNY 统一汇总** (月成本 / 剩余价值显示人民币); 汇率源 `src/utils/exchangeRate.ts`: 以 CNY 为基准, 多源接口回退 (`open.er-api.com` → `exchangerate-api.com` → `frankfurter.app`, 均免 key), 当日 localStorage 缓存 + 过期缓存 + 内置默认值三级兜底, 离线/失败始终有可用汇率不阻塞渲染; `SummaryCards` 异步拉取, 未到位前先用默认汇率算
+  - 派生计算全部在 `src/utils/summaryHelper.ts` (在线/地区数 / 内存磁盘求和 / 网络求和 / 财务); 月成本按 `billing_cycle` 折到 30 天, 月成本卡副行显示年成本估算 (`月成本 × 12`, 直观年度支出, 不再用剩余价值——月付节点几乎不计入无意义)
+  - 财务**经汇率折算成 CNY 统一汇总** (月成本 / 年成本估算显示人民币); 汇率源 `src/utils/exchangeRate.ts`: 以 CNY 为基准, 多源接口回退 (`open.er-api.com` → `exchangerate-api.com` → `frankfurter.app`, 均免 key), 当日 localStorage 缓存 + 过期缓存 + 内置默认值三级兜底, 离线/失败始终有可用汇率不阻塞渲染; `SummaryCards` 异步拉取, 未到位前先用默认汇率算
 - `src/components/NavBar.tsx`: 站名走 `SplitText` 字符级入场, 副标 Caveat "— monitor" 静态保持
 - 单节点详情 = **独立页面** (`/instance/:uuid` 走独立路由, 非弹窗):
   - `src/pages/instance/index.tsx`: 整页布局, 锁 `calc(100vh - 5rem)` 高度、左右两栏各自内部滚动

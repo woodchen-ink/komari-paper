@@ -151,8 +151,8 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ nodes, liveData }) => {
             icon={<Wallet className="size-4" />}
             label={t("summary.monthly_cost")}
             value={formatCNY(finance.monthlyCNY)}
-            sub={t("summary.remaining", {
-              value: formatCNY(finance.remainingCNY),
+            sub={t("summary.yearly", {
+              value: formatCNY(finance.yearlyCNY),
             })}
           />
         )}
