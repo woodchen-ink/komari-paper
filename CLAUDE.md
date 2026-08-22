@@ -37,9 +37,11 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - `--pen-red` / `--pen-blue`: 红蓝铅笔批注色 (其他笔色已删, 不堆多色)
   - `--data-1..5`: Recharts / 数据可视化色环 (与笔色同源, 偏冷静)
   - `--rule-line` (10% 暖墨色) / `--margin-line` (实红色, 装订线) / `--highlight` (荧光黄)
-- **纸纹背景**: 单层 SVG `feTurbulence` 噪点直接画在 `body` 上 (data URI 内联) + `background-blend-mode: multiply`, 200px 平铺。不画笔记本横线 (=作业本廉价感)。浓淡改 `feColorMatrix` 的 alpha (`0.32`) 与 `rect` 的 `opacity` (`0.55`) 这两个数
-  - **不要加 `background-attachment: fixed`**: 纹理必须跟着页面滚动才读作"一张纸", 钉死在视口上反而显平, 长页面滚动还要逐帧重绘
-  - **不要拆成 `body::before` 叠多层**: 负 z-index 子层会被 body 自身的不透明背景盖住 (按 CSS 绘制顺序, 负 z-index 排在"根背景之后、块级后代背景之前"), 试过一轮完全不显示; 而单层噪点观感已经够, 多层只是把水搅浑
+- **纸纹背景**: 单层 SVG `feTurbulence` 噪点 + `mix-blend-mode: multiply`, 200px 平铺。不画笔记本横线 (=作业本廉价感)。浓淡改 `feColorMatrix` 的 alpha (`0.32`) 与 `rect` 的 `opacity` (`0.55`) 这两个数
+  - **画在 `DynamicBackground` 的固定 DOM 层上, 不要画回 `body` 背景**: 画在 body 背景上时在本应用的实际结构里就是不出现 (CSS 与能正常显示的单页示例逐字节相同也一样, 排查无果); 画在真实元素上则稳定可见
+  - **`body` 必须保持 `background-color: transparent`, 纸色由 `html` 提供**。按 CSS 绘制顺序负 z-index 子元素排在"根背景之后、块级后代背景之前", body 一旦自绘不透明背景就会把 `-z-10` 的纸纹层整个盖住
+  - 不要加 `background-attachment: fixed` 的等价物: 纹理跟着页面滚动才读作"一张纸", 钉死在视口上反而显平
+  - 纸纹层在 DOM 里排在用户自定义背景图之后, 两者同为 `-z-10`, 靠 DOM 顺序让纸纹罩住照片, 观感才统一
   - 卡片 (`.paper-card`) / 纸条 (`.paper-strip`) 各自另有更细的颗粒 + 帘纹 + 顶部 3px 内高光 (纸有厚度), 因为它们是"另一张纸"且离眼睛更近
 - **字体加载写在 `index.html` 的 `<link>`, 不要写回 CSS**: Tailwind v4 的 `@import "tailwindcss"` 就地展开后, 后续 `@import url(...)` 不再位于文件顶部, 按 CSS 规范失效并被构建静默丢弃 (产物里搜不到 googleapis, 全站悄悄退回系统回退字体 —— 这个坑踩过一次, 整套字体从未真正上线)。`<link>` 形式还能与 JS/CSS 并行下载并配 `preconnect`
   - **只用 Google Fonts 一个来源** (`fonts.googleapis.com` + `fonts.gstatic.com`), 不引第三方 CDN; 三个拉丁族一次请求, 按 `unicode-range` 分片, 浏览器只下命中的分片
@@ -85,7 +87,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/components/CountUp.tsx`: `requestAnimationFrame` + ease-out cubic 数字滚动, 600ms; 接收 `string | number`, 仅滚动第一段整数 (前后缀如 ` / 10` 原样穿过); `currentRef` 兜底动画中断; reduced-motion 直显; 用于首页 Summary 在线节点数等纯整数项, 不用于带单位/方向箭头的传输量
 
 #### 关键组件
-- `src/components/DynamicBackground.tsx`: 极简, 仅渲染极淡 vignette + 用户自定义背景图 (sepia + multiply 半透明叠层, "夹照片"风格); 不再画咖啡渍 / 墨点
+- `src/components/DynamicBackground.tsx`: 纸面背景层 —— 用户自定义背景图 (sepia + multiply 半透明叠层, "夹照片"风格) + 其上的纸纹固定层 (细节见「纸纹背景」); vignette / 咖啡渍 / 墨点均已移除
 - `src/components/Node.tsx`: 便签风格紧凑节点卡 (`paper-card + node-card`), 信息密度高且分三级层次; `NodeGrid` 响应式网格 (手机 1 / 平板 2 / 笔记本 3 / 大屏 `2xl` 4 列, `items-stretch` 同行等高)
   - **三级信息层次** (靠规尺线 + 字阶分层, 不靠底色块): ① 资源块 (`.node-metric-block` 账本栏线 —— 无上框 / 下细线 / `::after` 中缝竖线, 视觉重心) ② 网络/健康 (主纸平铺墨色) ③ 脚注 (`.node-card-meta` 淡色 + 顶部细线)
   - **印刷收敛**: 卡内常态只有墨黑 + 少量红。用量条 / MiniBars / BillingBar 到期的常态档全部走墨色, 只有警示 (赭黄) 与危险 (红) 才上色; IP 版本 badge 也从绿底绿字收敛为墨色描边。满屏绿会稀释红的警示力

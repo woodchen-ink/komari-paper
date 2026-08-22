@@ -188,6 +188,13 @@
  * main.tsx 里 global.css 还先于 Radix 样式导入, 同特异性下 Radix 排后面获胜。
  * 故意写成双类名 (0,2,0) 提高特异性: 不依赖导入顺序, 也不用 !important。 */
 .radix-themes.radix-themes {
+  /* 兜底: Radix 的 <Theme> 根 div 默认带 data-has-background="true", 会画一层
+   * background-color: var(--color-background) (白) 盖住 body 的纸纹。
+   * main.tsx 目前已内联 backgroundColor: transparent, 这条只是防止其他地方
+   * (如 admin 内另起的 <Theme>) 漏掉。双类名 (0,2,0) 压过 Radix 的
+   * `.radix-themes:where([data-has-background=true])` —— :where() 特异性为 0。 */
+  background-color: transparent;
+
   --default-font-family: var(--font-serif);
   --heading-font-family: var(--font-serif);
   --strong-font-family: var(--font-serif);
@@ -215,21 +222,15 @@
     -moz-osx-font-smoothing: grayscale;
   }
   html { background: var(--paper); }
-  /* 纸纹: 单层 feTurbulence 噪点直接画在 body 上, multiply 让它像渗进纸里。
-   * 两个刻意的选择:
-   *   1. 不用 background-attachment: fixed —— 纹理必须跟着页面滚动才读作"一张纸";
-   *      钉死在视口上反而显平, 且长页面滚动时逐帧重绘。
-   *   2. 不拆成 ::before 叠多层 —— 负 z-index 子层会被 body 自身背景盖住 (踩过),
-   *      而单层噪点的观感已经够, 多层只是把水搅浑。
-   * 浓淡调 feColorMatrix 的 alpha (0.32) 与 rect 的 opacity (0.55) 这两个数。 */
+  /* body 刻意不画任何背景: 纸色由 html 提供, 纸纹由 DynamicBackground 的固定层绘制。
+   * 为什么不画在 body 背景上 —— 试过, 在本应用的实际结构里那层就是不出现 (CSS 与
+   * 单页示例逐字节相同也一样), 排查无果; 改画在真实 DOM 元素上则稳定可见。
+   * 同时 body 保持透明是必需的: 按 CSS 绘制顺序负 z-index 子元素排在"根背景之后、
+   * 块级后代背景之前", body 一旦自绘不透明背景就会把 -z-10 的纸纹层整个盖住。 */
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     color: var(--ink);
-    background-color: var(--paper);
-    background-image:
-      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16   0 0 0 0 0.14   0 0 0 0 0.12   0 0 0 0.32 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
-    background-size: 200px 200px;
-    background-blend-mode: multiply;
+    background-color: transparent;
     min-height: 100vh;
   }
 
