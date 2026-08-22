@@ -6,7 +6,7 @@
  *
  * 设计语言参考: Stripe Press / Maggie Appleton / Are.na
  * 核心反差: 衬线印刷骨架 + 极克制的手写批注 + 单色系 + 等宽数字
- *   - 标题/正文: EB Garamond (16 世纪冲压字源的人文老式体, 重心倾斜、收笔带笔锋)
+ *   - 标题/正文: Fraunces (variable opsz/SOFT/WONK, 老书印刷感)
  *   - 中文: 不加载 webfont, 走系统字体 (刻意取舍, 见下方字体栈注释)
  *   - 手写批注 (仅用于角标/日期/标签): Caveat
  *   - 数字 / 等宽: JetBrains Mono (机器精度)
@@ -14,7 +14,7 @@
  * 不要全部用手写体, 那样廉价. 衬线骨架才显设计感.
  * ============================================== */
 /* 字体在 index.html 用 <link> 从 Google Fonts 单一来源加载
- * (EB Garamond / Caveat / JetBrains Mono), 不引第三方 CDN。
+ * (Fraunces / Caveat / JetBrains Mono), 不引第三方 CDN。
  * 不要写回这里: Tailwind v4 的 `@import "tailwindcss"` 就地展开后, 后续 `@import url(...)`
  * 不再位于文件顶部, 按 CSS 规范失效并被构建静默丢弃 (产物里搜不到 googleapis / lxgw)。 */
 
@@ -109,6 +109,7 @@
   --pen-red: #b8331b;           /* 红铅笔 (批注 / 错误 / 离线) */
   --pen-blue: #1f4a7a;          /* 蓝铅笔 (链接 / 引用) */
   --rule-line: rgba(42, 38, 34, 0.10); /* 笔记本横线, 极淡 */
+
   --margin-line: #c33a1f;       /* 红色装订竖线 (实色, 是设计元素而不是装饰) */
   --highlight: #f3e58a;          /* 荧光笔黄 */
 
@@ -159,7 +160,7 @@
  * 字体栈 (Editorial Paper)
  *
  * 反差是关键: 主体走衬线印刷, 手写体只用于"批注/标签/页码"
- * - serif (主标题/正文): EB Garamond 衬线
+ * - serif (主标题/正文): Fraunces 衬线
  * - hand (批注/角标): Caveat, 极少量使用
  * - mono (数字/数据): JetBrains Mono, 让数字"机器精确"
  * ============================================== */
@@ -169,17 +170,16 @@
    * 都是衬线, 与拉丁骨架不冲突。
    * 别再往这三个栈里加中文 webfont "修" 它: 中文族体积远大于拉丁族, 而本主题的中文
    * 只出现在节点名 / 分组 / 图表任务名等少量位置, 不值这个首屏代价。 */
-  --font-serif: "EB Garamond", Georgia, "Times New Roman", serif;
-  --font-sans: "EB Garamond", Georgia, serif; /* 项目里 sans 也走衬线 */
+  --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "Fraunces", Georgia, serif; /* 项目里 sans 也走衬线 */
   --font-hand: "Caveat", cursive;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --font-data: var(--font-mono); /* 旧别名, 兼容现有引用 */
 
-  /* 印刷主数值字体。EB Garamond 只有 wght 轴, 故 --display-axes 为 normal。
-   * 该 token 是换字体时的唯一入口: 若换成带 opsz / SOFT / WONK 的可变字体 (如 Fraunces),
-   * 只改这两行 —— 组件层已不含任何字体专有的可变轴设置, 不要写回去。 */
+  /* 印刷主数值字体: 与正文同族但压住怪癖轴 —— WONK 0 关掉甩尾笔画, SOFT 0 保持端点
+   * 锐利, 数字才够"机器精确"。换字体时把 --display-axes 设为 normal 即可。 */
   --font-display: var(--font-serif);
-  --display-axes: normal;
+  --display-axes: "opsz" 48, "SOFT" 0, "WONK" 0;
 }
 
 /* Radix Themes 把字族挂在自己的 token 上 (.radix-themes { --default-font-family: -apple-system,
@@ -215,6 +215,13 @@
     -moz-osx-font-smoothing: grayscale;
   }
   html { background: var(--paper); }
+  /* 纸纹: 单层 feTurbulence 噪点直接画在 body 上, multiply 让它像渗进纸里。
+   * 两个刻意的选择:
+   *   1. 不用 background-attachment: fixed —— 纹理必须跟着页面滚动才读作"一张纸";
+   *      钉死在视口上反而显平, 且长页面滚动时逐帧重绘。
+   *   2. 不拆成 ::before 叠多层 —— 负 z-index 子层会被 body 自身背景盖住 (踩过),
+   *      而单层噪点的观感已经够, 多层只是把水搅浑。
+   * 浓淡调 feColorMatrix 的 alpha (0.32) 与 rect 的 opacity (0.55) 这两个数。 */
   body {
     @apply bg-background text-foreground;
     color: var(--ink);
@@ -222,7 +229,6 @@
     background-image:
       url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16   0 0 0 0 0.14   0 0 0 0 0.12   0 0 0 0.32 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
     background-size: 200px 200px;
-    background-attachment: fixed;
     background-blend-mode: multiply;
     min-height: 100vh;
   }
@@ -238,6 +244,15 @@
     font-weight: 700;
     letter-spacing: -0.02em;
   }
+
+  /* Fraunces 可变轴按用途分档 —— 轴值只在这里出现, 组件层不写 font-variation-settings。
+   * 未列出的元素走 font-optical-sizing: auto (浏览器按字号自动定 opsz), 这对正文最合适。
+   * 换成没有 SOFT/WONK 的字体时, 把这几条设成 normal 即可, 不必翻组件。 */
+  h1 { font-variation-settings: "opsz" 144, "SOFT" 30, "WONK" 1; }
+  h2 { font-variation-settings: "opsz" 96, "SOFT" 20; }
+  h3, h4 { font-variation-settings: "opsz" 48; }
+  /* 封面级大字 (NavBar 站名): 比 h1 更软更怪, 是品牌识别点 */
+  .axis-cover { font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 1; }
 
   /* 等宽数字 + 表格、代码 */
   .font-mono, code, kbd, pre, samp,
@@ -303,10 +318,22 @@ body, * {
     0 1px 2px rgba(42, 38, 34, 0.05);
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
               box-shadow 0.35s ease;
+  /* 卡面比主纸更细腻 (更高频颗粒 + 更淡帘纹): 它是另一张纸, 且离眼睛更近。
+   * 内高光 + 底部内阴影做"纸有厚度", 光从上方来。 */
   background-image:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16   0 0 0 0 0.14   0 0 0 0 0.12   0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
-  background-size: 180px 180px;
-  background-blend-mode: multiply;
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.5) 0,
+      rgba(255, 255, 255, 0) 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(42, 38, 34, 0.009) 0 1px,
+      transparent 1px 4px
+    ),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.05' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16   0 0 0 0 0.14   0 0 0 0 0.12   0 0 0 0.15 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: auto, auto, 160px 160px;
+  background-blend-mode: normal, multiply, multiply;
 }
 
 .paper-card:hover {
@@ -329,7 +356,11 @@ body, * {
 /* 纸条: NavBar / Footer / 不可旋转的容器 */
 .paper-strip {
   position: relative;
-  background: var(--paper-card);
+  background-color: var(--paper-card);
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.05' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16   0 0 0 0 0.14   0 0 0 0 0.12   0 0 0 0.13 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+  background-blend-mode: multiply;
   color: var(--ink);
   border: 1px solid var(--ink-line-soft);
   border-radius: 2px;
@@ -679,6 +710,8 @@ body, * {
 /* Eyebrow label: 章节小标题, 全大写 + 衬线斜体 + 字间距, 像杂志栏目名 */
 .eyebrow {
   font-family: var(--font-serif);
+  /* 复位轴: 嵌在标题容器里时不该继承大号 opsz, 交回自动光学尺寸 */
+  font-variation-settings: normal;
   font-style: italic;
   font-weight: 500;
   font-size: 0.72rem;
@@ -765,12 +798,13 @@ body, * {
 /* Drop cap: 段首大字母 (装饰文章引言用), 衬线粗体 */
 .drop-cap::first-letter {
   font-family: var(--font-serif);
-  font-weight: 800; /* EB Garamond 最粗 800 */
+  font-weight: 900;
   font-size: 3.6em;
   line-height: 0.85;
   float: left;
   margin: 0.05em 0.08em 0 -0.04em;
   color: var(--ink);
+  font-variation-settings: "opsz" 144, "SOFT" 100;
 }
 
 /* Editorial rule: 极细水平细线, 用于章节分割 */

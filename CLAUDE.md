@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press / Maggie Appleton / Are.na: 暖白纸面 + EB Garamond 人文衬线印刷骨架 + 极克制的手写批注 + JetBrains Mono 等宽数据。保持 Komari 原有数据层 (RPC2 + Context) 不变。
+Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press / Maggie Appleton / Are.na: 暖白纸面 + Fraunces 衬线印刷骨架 + 极克制的 Caveat 手写批注 + JetBrains Mono 等宽数据。保持 Komari 原有数据层 (RPC2 + Context) 不变。
 
 ## Development Commands
 
@@ -37,15 +37,21 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - `--pen-red` / `--pen-blue`: 红蓝铅笔批注色 (其他笔色已删, 不堆多色)
   - `--data-1..5`: Recharts / 数据可视化色环 (与笔色同源, 偏冷静)
   - `--rule-line` (10% 暖墨色) / `--margin-line` (实红色, 装订线) / `--highlight` (荧光黄)
-- **纸纹背景**: 单层 SVG `feTurbulence` 极淡噪点 (data URI 内联), 不再画笔记本横线 (=作业本廉价感)
+- **纸纹背景**: 单层 SVG `feTurbulence` 噪点直接画在 `body` 上 (data URI 内联) + `background-blend-mode: multiply`, 200px 平铺。不画笔记本横线 (=作业本廉价感)。浓淡改 `feColorMatrix` 的 alpha (`0.32`) 与 `rect` 的 `opacity` (`0.55`) 这两个数
+  - **不要加 `background-attachment: fixed`**: 纹理必须跟着页面滚动才读作"一张纸", 钉死在视口上反而显平, 长页面滚动还要逐帧重绘
+  - **不要拆成 `body::before` 叠多层**: 负 z-index 子层会被 body 自身的不透明背景盖住 (按 CSS 绘制顺序, 负 z-index 排在"根背景之后、块级后代背景之前"), 试过一轮完全不显示; 而单层噪点观感已经够, 多层只是把水搅浑
+  - 卡片 (`.paper-card`) / 纸条 (`.paper-strip`) 各自另有更细的颗粒 + 帘纹 + 顶部 3px 内高光 (纸有厚度), 因为它们是"另一张纸"且离眼睛更近
 - **字体加载写在 `index.html` 的 `<link>`, 不要写回 CSS**: Tailwind v4 的 `@import "tailwindcss"` 就地展开后, 后续 `@import url(...)` 不再位于文件顶部, 按 CSS 规范失效并被构建静默丢弃 (产物里搜不到 googleapis, 全站悄悄退回系统回退字体 —— 这个坑踩过一次, 整套字体从未真正上线)。`<link>` 形式还能与 JS/CSS 并行下载并配 `preconnect`
   - **只用 Google Fonts 一个来源** (`fonts.googleapis.com` + `fonts.gstatic.com`), 不引第三方 CDN; 三个拉丁族一次请求, 按 `unicode-range` 分片, 浏览器只下命中的分片
 - **中文刻意不加载 webfont**: 三个栈都以通用族 (`serif` / `cursive` / `monospace`) 收尾, 中文由系统字体承担 (Windows 宋体 / macOS 宋体 SC, 都是衬线, 不与拉丁骨架冲突)。**不要往栈里加中文 webfont "修"它** —— 中文族体积远大于拉丁族, 而本主题中文只出现在节点名 / 分组 / 图表任务名等少量位置, 不值这个首屏代价
 - **字体栈**:
-  - `--font-serif`: **EB Garamond** (variable wght 400..800 + italic) — 主标题 / 正文 / UI。选它是要"有笔意": 16 世纪冲压字源的人文老式体, 重心倾斜、收笔带笔锋, 不是 Times 那种硬朗 transitional
+  - `--font-serif`: **Fraunces** (variable opsz / SOFT / WONK + italic) — 主标题 / 正文 / UI
   - `--font-hand`: **Caveat** — **仅** 用于批注 / 标签 / 空状态
   - `--font-mono`: **JetBrains Mono** — 数字 / 流量 / 表格 / Recharts 坐标
-  - `--font-display` + `--display-axes`: 印刷主数值用。EB Garamond 只有 wght 轴故 axes 为 `normal`; **该 token 是换字体的唯一入口 —— 组件层不得再写任何字体专有的 `fontVariationSettings`** (换字体时那些设置会静默失效, 之前 Fraunces 的 opsz/SOFT/WONK 就是这么散在 5 个组件里的)
+  - `--font-display` + `--display-axes` (`opsz 48 / SOFT 0 / WONK 0`): 印刷主数值用, 压掉甩尾笔画与圆端点, 数字才够"机器精确"
+- **Fraunces 可变轴: 轴值只写在 `global.css`, 组件层一律不写 `fontVariationSettings`**。分档挂在元素选择器与语义类上 —— `h1` (opsz 144 / SOFT 30 / WONK 1)、`h2` (96 / 20)、`h3,h4` (48)、`.axis-cover` (144 / 50 / WONK 1, NavBar 站名这类封面级大字)、`.eyebrow` 复位为 `normal` (嵌在标题容器里时不该继承大号 opsz)。未列出的元素走 `font-optical-sizing: auto`, 由浏览器按字号自动定 opsz, 正文最合适
+  - 换字体只改 global.css 这几条 (目标字体没有这些轴就设 `normal`)。曾把轴值散在 5 个组件里, 换一次字体要翻 5 个文件, 且旧设置在新字体上静默失效
+- **请求 Fraunces 必须带上 `SOFT` 与 `WONK` 两条自定义轴**: `family=Fraunces:ital,opsz,wght,SOFT,WONK@…`。只请求 `opsz,wght` 时服务端返回的是**另一个不含这两轴的字体文件**, CSS 里的 `"SOFT"` / `"WONK"` 会静默失效 —— 项目早期就是这个状态, 那些设置从没生效过
 - **必须覆盖 Radix Themes 字体 token**: Radix 在 `.radix-themes` 上定义 `--default-font-family: -apple-system, …, "Segoe UI"` 等 6 个 token, 且是**非 layer 规则**, 压过 `@layer base` 的 `html/body`; `main.tsx` 里 `global.css` 又先于 Radix 样式导入, 同特异性下 Radix 获胜 → 所有 `.rt-*` 组件退回系统 sans。`global.css` 用双类名 `.radix-themes.radix-themes` (0,2,0) 把 6 个 token 接到纸质字体栈, 不依赖导入顺序也不用 `!important`
 - **OpenType 特性**: `font-variant-numeric: oldstyle-nums proportional-nums` 默认; `.font-tabular` / `.font-mono` / `.num-display` 切到 `tabular-nums lining-nums`
 - **暗色变体**: 不存在。`@custom-variant dark` 指向 `.never-active`, shadcn / Tailwind 的 `dark:` 前缀永不命中
@@ -66,7 +72,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `.leader`: **引导点线** (目录 / 账本里连接标签与数值的那排点)。作 flex 子项吃掉中间空档, 空间不足先缩自己 (`min-width: .6rem` 保底)
 - `.rule-bar` / `.rule-bar-fill`: **标尺式用量条** (基线 + 四分刻度 + 3px 实心墨条), 取代纯实色填充块 —— 后者是最"web 仪表盘"的元素
 - `.node-masthead-rule`: 节点卡标题下的 2px 粗墨线 (刊头骨架)
-- `.drop-cap::first-letter`: 段首大字母, 衬线 800 (EB Garamond 最粗档)
+- `.drop-cap::first-letter`: 段首大字母, Fraunces 900 + opsz 144 + SOFT 100
 - `.editorial-rule` / `.thick`: 极细 (1px) / 加粗 (2px) 水平分隔线
 - `.editorial-margin::before`: 元素左侧 1px 红墨竖线 (装订线 / 强调段)
 - `.corner-stamp`: 卡片右上角圆形红圈印章 (Caveat 字 + 旋转 -12deg, absolute)
@@ -172,4 +178,4 @@ ErrorBoundary → BrowserRouter → ThemeContext (固定 light) → Radix <Theme
 - 禁止使用 `localStorage` 存认证态 (保持 Komari 现有 cookie 机制)
 - **不再有暗色模式**: html 上不挂 `.dark` / `.dark-theme`; 全部 shadcn / Tailwind 的 `dark:` 前缀永不命中。如要重新启用暗色, 需在 `global.css` 恢复 `@custom-variant dark` 的真实选择器, 并新增 `.dark` 块的 token 定义
 - 网页 `theme-color` meta 与 `index.html` 首屏骨架 `html/body` 背景统一为暖白纸 `#f4efe6`
-- 字体全部走 Google Fonts (`EB Garamond` / `Caveat` / `JetBrains Mono`), **不引第三方 CDN**, 不加载中文 webfont; 离线环境回退到系统衬线 (Georgia) / cursive / monospace
+- 字体全部走 Google Fonts (`Fraunces` 全轴 / `Caveat` / `JetBrains Mono`), **不引第三方 CDN**, 不加载中文 webfont; 离线环境回退到系统衬线 (Georgia) / cursive / monospace

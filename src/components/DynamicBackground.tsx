@@ -2,7 +2,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { usePublicInfo } from "@/contexts/PublicInfoContext";
 
 // Editorial Paper 主题的背景装饰层
-// - 主纸张色 + 纸纤维噪点已由 global.css body 渲染, 这里不再重复
+// - 主纸张色由 global.css 的 body 渲染, 三层纸纹由 body::before 固定层渲染 (z-index -5),
+//   会盖在这里的 -z-10 图层之上 —— 用户背景图也被纸纹罩住, 观感才统一
 // - 仅做两件事:
 //   1) 用户自定义背景图: 半透明 sepia 叠层, 像夹在书里的旧照片
 //   2) 极淡 vignette, 让边缘自然回收

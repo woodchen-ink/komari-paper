@@ -19,7 +19,7 @@ const NavBar = () => {
             text={publicInfo?.sitename ?? ""}
             step={45}
             duration={560}
-            className="text-[clamp(1.5rem,5vw,2.1rem)] whitespace-nowrap truncate leading-tight"
+            className="axis-cover text-[clamp(1.5rem,5vw,2.1rem)] whitespace-nowrap truncate leading-tight"
             style={{
               color: "var(--ink)",
               fontFamily: "var(--font-serif)",

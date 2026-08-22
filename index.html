@@ -18,7 +18,9 @@
       link 形式还能与 JS/CSS 并行下载, 不必等 global.css 解析完才发起请求。
 
       只加载拉丁三族; 中文**刻意不加载 webfont**, 交给系统字体 (见 global.css 字体栈注释)。
-        EB Garamond    正文 / 标题 (variable wght + italic, .eyebrow 用斜体)
+        Fraunces       正文 / 标题 (variable, 必须带 SOFT + WONK 两条自定义轴 ——
+                       只请求 opsz,wght 时服务端给的是另一个不含这两轴的文件,
+                       CSS 里的 "SOFT"/"WONK" 会静默失效)
         Caveat         手写批注
         JetBrains Mono 数字 / 数据
     -->
@@ -26,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Caveat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..900,0..100,0..1;1,9..144,400..900,0..100,0..1&amp;family=Caveat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap"
     />
     
     <!-- PWA Configuration: Editorial Paper, theme-color 用暖白纸色 -->
@@ -67,7 +69,7 @@
         flex-direction: column;
         align-items: center;
         gap: 1rem;
-        font-family: "EB Garamond", Georgia, serif;
+        font-family: "Fraunces", Georgia, serif;
       }
       .pre-skel {
         position: relative;
