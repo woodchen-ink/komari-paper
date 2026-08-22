@@ -16,18 +16,17 @@
       必须写在这里而不是 global.css: Tailwind v4 的 `@import "tailwindcss"` 会就地展开,
       把后续的 `@import url(...)` 挤到非文件顶部, 按 CSS 规范失效并被构建丢弃。
       link 形式还能与 JS/CSS 并行下载, 不必等 global.css 解析完才发起请求。
-      五个族各自按 unicode-range 分片 (中文 90+ 片), 浏览器只下载页面命中的分片:
-        EB Garamond  正文 / 标题 (variable wght + italic, .eyebrow 用斜体)
-        Noto Serif SC 中文正文 (与拉丁同为衬线)
-        Caveat        拉丁手写批注
-        Ma Shan Zheng 中文手写批注 (行楷, Caveat 的中文对位)
+
+      只加载拉丁三族; 中文**刻意不加载 webfont**, 交给系统字体 (见 global.css 字体栈注释)。
+        EB Garamond    正文 / 标题 (variable wght + italic, .eyebrow 用斜体)
+        Caveat         手写批注
         JetBrains Mono 数字 / 数据
     -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Caveat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Noto+Serif+SC:wght@400..700&amp;family=Ma+Shan+Zheng&amp;display=swap"
+      href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Caveat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap"
     />
     
     <!-- PWA Configuration: Editorial Paper, theme-color 用暖白纸色 -->
@@ -68,7 +67,7 @@
         flex-direction: column;
         align-items: center;
         gap: 1rem;
-        font-family: "EB Garamond", "Noto Serif SC", Georgia, serif;
+        font-family: "EB Garamond", Georgia, serif;
       }
       .pre-skel {
         position: relative;

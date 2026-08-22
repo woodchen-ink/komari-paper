@@ -7,14 +7,14 @@
  * 设计语言参考: Stripe Press / Maggie Appleton / Are.na
  * 核心反差: 衬线印刷骨架 + 极克制的手写批注 + 单色系 + 等宽数字
  *   - 标题/正文: EB Garamond (16 世纪冲压字源的人文老式体, 重心倾斜、收笔带笔锋)
- *   - 中文: Noto Serif SC (与拉丁同为衬线, 同族质感)
- *   - 手写批注 (仅用于角标/日期/标签): Caveat + Ma Shan Zheng (中文行楷)
+ *   - 中文: 不加载 webfont, 走系统字体 (刻意取舍, 见下方字体栈注释)
+ *   - 手写批注 (仅用于角标/日期/标签): Caveat
  *   - 数字 / 等宽: JetBrains Mono (机器精度)
  *
  * 不要全部用手写体, 那样廉价. 衬线骨架才显设计感.
  * ============================================== */
-/* 字体在 index.html 用 <link> 从 Google Fonts 单一来源加载 (EB Garamond / Noto Serif SC /
- * Caveat / Ma Shan Zheng / JetBrains Mono), 不引第三方 CDN。
+/* 字体在 index.html 用 <link> 从 Google Fonts 单一来源加载
+ * (EB Garamond / Caveat / JetBrains Mono), 不引第三方 CDN。
  * 不要写回这里: Tailwind v4 的 `@import "tailwindcss"` 就地展开后, 后续 `@import url(...)`
  * 不再位于文件顶部, 按 CSS 规范失效并被构建静默丢弃 (产物里搜不到 googleapis / lxgw)。 */
 
@@ -159,17 +159,20 @@
  * 字体栈 (Editorial Paper)
  *
  * 反差是关键: 主体走衬线印刷, 手写体只用于"批注/标签/页码"
- * - serif (主标题/正文): EB Garamond 衬线 + 中文 Noto Serif SC
- * - hand (批注/角标): Caveat + 中文 Ma Shan Zheng (行楷), 极少量使用
+ * - serif (主标题/正文): EB Garamond 衬线
+ * - hand (批注/角标): Caveat, 极少量使用
  * - mono (数字/数据): JetBrains Mono, 让数字"机器精确"
  * ============================================== */
 :root {
-  --font-serif: "EB Garamond", "Noto Serif SC", Georgia, "Times New Roman", serif;
-  --font-sans: "EB Garamond", "Noto Serif SC", Georgia, serif; /* 项目里 sans 也走衬线 */
-  --font-hand: "Caveat", "Ma Shan Zheng", cursive;
-  /* 栈尾必须留中文兜底: JetBrains Mono 无 CJK 字形, 否则 .font-mono 容器里的中文
-   * (图表任务名 / 标签 / 单位) 会掉到系统等宽宋体, 与全站中文字体脱节 */
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, "Noto Serif SC", monospace;
+  /* 中文**刻意不加载 webfont**: 拉丁三族才是这套设计的骨架, 中文一律落到栈尾的通用族
+   * (serif / cursive / monospace) 由系统决定 —— Windows 多为宋体、macOS 为宋体 SC,
+   * 都是衬线, 与拉丁骨架不冲突。
+   * 别再往这三个栈里加中文 webfont "修" 它: 中文族体积远大于拉丁族, 而本主题的中文
+   * 只出现在节点名 / 分组 / 图表任务名等少量位置, 不值这个首屏代价。 */
+  --font-serif: "EB Garamond", Georgia, "Times New Roman", serif;
+  --font-sans: "EB Garamond", Georgia, serif; /* 项目里 sans 也走衬线 */
+  --font-hand: "Caveat", cursive;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --font-data: var(--font-mono); /* 旧别名, 兼容现有引用 */
 
   /* 印刷主数值字体。EB Garamond 只有 wght 轴, 故 --display-axes 为 normal。

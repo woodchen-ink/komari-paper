@@ -39,11 +39,12 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - `--rule-line` (10% 暖墨色) / `--margin-line` (实红色, 装订线) / `--highlight` (荧光黄)
 - **纸纹背景**: 单层 SVG `feTurbulence` 极淡噪点 (data URI 内联), 不再画笔记本横线 (=作业本廉价感)
 - **字体加载写在 `index.html` 的 `<link>`, 不要写回 CSS**: Tailwind v4 的 `@import "tailwindcss"` 就地展开后, 后续 `@import url(...)` 不再位于文件顶部, 按 CSS 规范失效并被构建静默丢弃 (产物里搜不到 googleapis, 全站悄悄退回系统回退字体 —— 这个坑踩过一次, 整套字体从未真正上线)。`<link>` 形式还能与 JS/CSS 并行下载并配 `preconnect`
-  - **只用 Google Fonts 一个来源** (`fonts.googleapis.com` + `fonts.gstatic.com`), 不引第三方 CDN; 五个族一次请求, 各自按 `unicode-range` 分片 (中文 90+ 片), 浏览器只下命中的分片
+  - **只用 Google Fonts 一个来源** (`fonts.googleapis.com` + `fonts.gstatic.com`), 不引第三方 CDN; 三个拉丁族一次请求, 按 `unicode-range` 分片, 浏览器只下命中的分片
+- **中文刻意不加载 webfont**: 三个栈都以通用族 (`serif` / `cursive` / `monospace`) 收尾, 中文由系统字体承担 (Windows 宋体 / macOS 宋体 SC, 都是衬线, 不与拉丁骨架冲突)。**不要往栈里加中文 webfont "修"它** —— 中文族体积远大于拉丁族, 而本主题中文只出现在节点名 / 分组 / 图表任务名等少量位置, 不值这个首屏代价
 - **字体栈**:
-  - `--font-serif`: **EB Garamond** (variable wght 400..800 + italic) + **Noto Serif SC** (中) — 主标题 / 正文 / UI。选它是要"有笔意": 16 世纪冲压字源的人文老式体, 重心倾斜、收笔带笔锋, 不是 Times 那种硬朗 transitional
-  - `--font-hand`: **Caveat** + **Ma Shan Zheng** (中文行楷) — **仅** 用于批注 / 标签 / 空状态
-  - `--font-mono`: **JetBrains Mono** + … + Noto Serif SC — 数字 / 流量 / 表格 / Recharts 坐标。**栈尾必须留中文兜底**: JetBrains Mono 无 CJK 字形, 少了兜底则 `.font-mono` 容器里的中文掉到系统等宽宋体
+  - `--font-serif`: **EB Garamond** (variable wght 400..800 + italic) — 主标题 / 正文 / UI。选它是要"有笔意": 16 世纪冲压字源的人文老式体, 重心倾斜、收笔带笔锋, 不是 Times 那种硬朗 transitional
+  - `--font-hand`: **Caveat** — **仅** 用于批注 / 标签 / 空状态
+  - `--font-mono`: **JetBrains Mono** — 数字 / 流量 / 表格 / Recharts 坐标
   - `--font-display` + `--display-axes`: 印刷主数值用。EB Garamond 只有 wght 轴故 axes 为 `normal`; **该 token 是换字体的唯一入口 —— 组件层不得再写任何字体专有的 `fontVariationSettings`** (换字体时那些设置会静默失效, 之前 Fraunces 的 opsz/SOFT/WONK 就是这么散在 5 个组件里的)
 - **必须覆盖 Radix Themes 字体 token**: Radix 在 `.radix-themes` 上定义 `--default-font-family: -apple-system, …, "Segoe UI"` 等 6 个 token, 且是**非 layer 规则**, 压过 `@layer base` 的 `html/body`; `main.tsx` 里 `global.css` 又先于 Radix 样式导入, 同特异性下 Radix 获胜 → 所有 `.rt-*` 组件退回系统 sans。`global.css` 用双类名 `.radix-themes.radix-themes` (0,2,0) 把 6 个 token 接到纸质字体栈, 不依赖导入顺序也不用 `!important`
 - **OpenType 特性**: `font-variant-numeric: oldstyle-nums proportional-nums` 默认; `.font-tabular` / `.font-mono` / `.num-display` 切到 `tabular-nums lining-nums`
@@ -171,4 +172,4 @@ ErrorBoundary → BrowserRouter → ThemeContext (固定 light) → Radix <Theme
 - 禁止使用 `localStorage` 存认证态 (保持 Komari 现有 cookie 机制)
 - **不再有暗色模式**: html 上不挂 `.dark` / `.dark-theme`; 全部 shadcn / Tailwind 的 `dark:` 前缀永不命中。如要重新启用暗色, 需在 `global.css` 恢复 `@custom-variant dark` 的真实选择器, 并新增 `.dark` 块的 token 定义
 - 网页 `theme-color` meta 与 `index.html` 首屏骨架 `html/body` 背景统一为暖白纸 `#f4efe6`
-- 字体全部走 Google Fonts (`EB Garamond` / `Noto Serif SC` / `Caveat` / `Ma Shan Zheng` / `JetBrains Mono`), **不引第三方 CDN**; 离线环境回退到系统衬线 (Georgia) / cursive / monospace
+- 字体全部走 Google Fonts (`EB Garamond` / `Caveat` / `JetBrains Mono`), **不引第三方 CDN**, 不加载中文 webfont; 离线环境回退到系统衬线 (Georgia) / cursive / monospace
