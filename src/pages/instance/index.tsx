@@ -12,7 +12,13 @@ import PingChart from "./PingChart";
 import { DetailsGrid } from "@/components/DetailsGrid";
 import { usePublicInfo } from "@/contexts/PublicInfoContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import SplitText from "@/components/SplitText";
+import {
+  bucketKeyOf,
+  hasCustomGroups,
+  type GroupDimension,
+} from "@/utils/groupingHelper";
 
 export default function InstancePage() {
   const { t } = useTranslation();
@@ -32,7 +38,21 @@ export default function InstancePage() {
   const offlineServerPosition =
     publicInfo?.theme_settings?.offlineServerPosition;
 
-  // 组织按分组的服务器列表
+  // 侧栏分组维度: 用户可在自定义分组与地区之间切换 (选择持久化)
+  const [groupDimension, setGroupDimension] = useLocalStorage<GroupDimension>(
+    "instanceGroupDimension",
+    "group",
+  );
+  // 一个自定义分组都没有时按 group 分会只剩一个 "Ungrouped" 桶, 等于没分组 —— 自动改按地区
+  const canGroupByCustom = useMemo(
+    () => hasCustomGroups(nodeList ?? []),
+    [nodeList],
+  );
+  const effectiveDimension: GroupDimension = canGroupByCustom
+    ? groupDimension
+    : "region";
+
+  // 组织按当前维度分桶的服务器列表
   const groupedNodes = useMemo(() => {
     if (!nodeList) return [];
 
@@ -59,7 +79,7 @@ export default function InstancePage() {
     const groups = new Map<string | null, typeof nodeList>();
 
     nodeList.forEach((node) => {
-      const groupKey = node.group && node.group.trim() ? node.group : null;
+      const groupKey = bucketKeyOf(node, effectiveDimension);
       if (!groups.has(groupKey)) {
         groups.set(groupKey, []);
       }
@@ -90,7 +110,7 @@ export default function InstancePage() {
     }
 
     return result;
-  }, [nodeList, live_data, offlineServerPosition]);
+  }, [nodeList, live_data, offlineServerPosition, effectiveDimension]);
 
   useEffect(() => {
     if (!uuid) {
@@ -157,16 +177,39 @@ export default function InstancePage() {
             <Flex direction="column" gap="0" className="h-full min-h-0">
               <div className="px-4 py-2.5 shrink-0 border-b border-[var(--ink-line-soft)]">
                 <div className="eyebrow">Index</div>
-                <h2
-                  className="mt-0.5 text-base"
-                  style={{
-                    fontFamily: "var(--font-serif)",
-                    fontWeight: 600,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Servers
-                </h2>
+                <div className="flex items-baseline justify-between gap-2">
+                  <h2
+                    className="mt-0.5 text-base"
+                    style={{
+                      fontFamily: "var(--font-serif)",
+                      fontWeight: 600,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    Servers
+                  </h2>
+                  {/* 维度切换: 无自定义分组时没得切, 不渲染 */}
+                  {canGroupByCustom && (
+                    <div className="flex items-baseline gap-1.5 shrink-0">
+                      <DimensionTab
+                        active={effectiveDimension === "group"}
+                        onClick={() => setGroupDimension("group")}
+                        label="Group"
+                      />
+                      <span
+                        aria-hidden="true"
+                        style={{ color: "var(--ink-line-soft)" }}
+                      >
+                        /
+                      </span>
+                      <DimensionTab
+                        active={effectiveDimension === "region"}
+                        onClick={() => setGroupDimension("region")}
+                        label="Region"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-1">
                 {groupedNodes.map((group, groupIndex) => (
@@ -224,7 +267,6 @@ export default function InstancePage() {
                   fontWeight: 700,
                   letterSpacing: "-0.025em",
                   fontSize: "clamp(1.6rem, 3vw, 2.2rem)",
-                  fontVariationSettings: '"opsz" 144, "SOFT" 30, "WONK" 1',
                   lineHeight: 1.1,
                 }}
               />
@@ -265,3 +307,28 @@ export default function InstancePage() {
     </div>
   );
 }
+
+// 侧栏分组维度切换: eyebrow 尺寸的极简文字 tab, active 用红铅笔色 (不占版面)
+const DimensionTab = ({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={active}
+    className="eyebrow bg-transparent cursor-pointer transition-colors"
+    style={{
+      color: active ? "var(--pen-red)" : "var(--ink-mute)",
+      fontWeight: active ? 600 : 500,
+      padding: 0,
+    }}
+  >
+    {label}
+  </button>
+);

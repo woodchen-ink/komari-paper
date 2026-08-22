@@ -69,6 +69,8 @@ interface NodeProps {
   basic: NodeBasicInfo;
   live: Record | undefined;
   online: boolean;
+  /** 列表内的条目序号 (从 1 起), 用于卡片刊头 "No.03"; 缺省则刊头只出地区代码 */
+  index?: number;
 }
 
 const defaultLive: Record = {
@@ -85,13 +87,16 @@ const defaultLive: Record = {
   updated_at: "",
 };
 
-const Node = React.memo(({ basic, live, online }: NodeProps) => {
+const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
   const [t] = useTranslation();
   const { publicInfo } = usePublicInfo();
   // 便签卡 ping 汇总 (共享缓存 + 60s 节流, 离线节点不拉; 详见 useNodePing)
   const ping = useNodePing(basic.uuid, online);
 
   const liveData = live || defaultLive;
+  // 刊头: 条目编号 + 通栏点线, 在线 / 离线两种卡共用。
+  // 右端不放地区代码 —— 旗帜与 #group 已各带一次地域信息, 再加一次是三重冗余
+  const entryNo = index != null ? `No.${String(index).padStart(2, "0")}` : "";
 
   const cpuPercent = liveData.cpu?.usage ?? 0;
   const memoryUsagePercent = basic.mem_total
@@ -129,42 +134,48 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
         className="paper-card node-card cursor-pointer transition-all w-full"
       >
         <div className="p-3 flex flex-col h-full">
-          <div className="flex items-center gap-2 mb-2 min-w-0">
-            {/* 离线指示: 红墨水点, 用 ink-pulse 做透明度脉冲 */}
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full pulse-animation"
-              style={{ background: "var(--pen-red)" }}
-            />
-            <Flag flag={basic.region} />
-            <Link
-              to={`/instance/${basic.uuid}`}
-              className="flex-1 min-w-0"
-            >
-              <h3
-                className="text-sm sm:text-base truncate"
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  fontWeight: 600,
-                  letterSpacing: "-0.01em",
-                  fontVariationSettings: '"opsz" 48',
-                }}
-              >
-                {basic.name}
-              </h3>
-            </Link>
-            {basic.group && (
-              // 离线分组: 红铅笔批注 (Caveat), 不加边框, 像在卡角随手写一笔
+          <div className="flex flex-col gap-1 mb-2">
+            <div className="flex items-baseline gap-0 min-w-0">
+              <span className="eyebrow shrink-0">{entryNo}</span>
+              <i className="leader" aria-hidden="true" />
+            </div>
+            <div className="flex items-center gap-2 min-w-0">
+              {/* 离线指示: 红墨水点, 用 ink-pulse 做透明度脉冲 */}
               <span
-                className="text-sm shrink-0 font-hand"
-                style={{
-                  color: "var(--pen-red)",
-                  transform: "rotate(-3deg)",
-                  display: "inline-block",
-                }}
+                className="h-2.5 w-2.5 shrink-0 rounded-full pulse-animation"
+                style={{ background: "var(--pen-red)" }}
+              />
+              <Flag flag={basic.region} />
+              <Link
+                to={`/instance/${basic.uuid}`}
+                className="flex-1 min-w-0"
               >
-                #{basic.group}
-              </span>
-            )}
+                <h3
+                  className="text-sm sm:text-base truncate"
+                  style={{
+                    fontFamily: "var(--font-serif)",
+                    fontWeight: 600,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  {basic.name}
+                </h3>
+              </Link>
+              {basic.group && (
+                // 离线分组: 红铅笔批注 (Caveat), 不加边框, 像在卡角随手写一笔
+                <span
+                  className="text-sm shrink-0 font-hand"
+                  style={{
+                    color: "var(--pen-red)",
+                    transform: "rotate(-3deg)",
+                    display: "inline-block",
+                  }}
+                >
+                  #{basic.group}
+                </span>
+              )}
+            </div>
+            <div className="node-masthead-rule" />
           </div>
           {/* 离线批注 */}
           <div
@@ -201,39 +212,56 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
       className="paper-card node-card cursor-pointer transition-all w-full"
     >
       <div className="p-3 relative flex flex-col h-full gap-2.5">
-        {/* 头：旗 + 名称 + 分组红铅笔批注 */}
-        <div className="flex items-center gap-2 min-w-0">
-          <Flag flag={basic.region} />
-          <Link to={`/instance/${basic.uuid}`} className="min-w-0 flex-1">
-            <h3
-              className="text-sm sm:text-base truncate"
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontWeight: 600,
-                letterSpacing: "-0.01em",
-                fontVariationSettings: '"opsz" 48',
-              }}
-            >
-              {basic.name}
-            </h3>
-          </Link>
-          {liveData.message && <Tips color="var(--destructive)">{liveData.message}</Tips>}
-          {basic.group && (
-            // 分组: 卡角随手写的红铅笔批注, 不加边框
-            <span
-              className="text-sm shrink-0 font-hand"
-              style={{
-                color: "var(--pen-red)",
-                transform: "rotate(-2deg)",
-                display: "inline-block",
-              }}
-            >
-              #{basic.group}
-            </span>
-          )}
+        {/* 刊头: 编号 ···· uptime → 名称行 → 2px 粗线, 读作杂志目录里的一条 */}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-baseline gap-0 min-w-0">
+            <span className="eyebrow shrink-0">{entryNo}</span>
+            <i className="leader" aria-hidden="true" />
+            {/* uptime 放刊头右端: 版式上等同刊期/日期, 也让拥挤的脚注行让出一格 */}
+            {liveData.uptime > 0 && (
+              <span
+                className="flex items-baseline gap-1 shrink-0 font-mono text-[11px]"
+                style={{ color: "var(--ink-mute)" }}
+                title={formatUptime(liveData.uptime, t)}
+              >
+                <Clock className="size-3 self-center" />
+                {formatUptimeShort(liveData.uptime)}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <Flag flag={basic.region} />
+            <Link to={`/instance/${basic.uuid}`} className="min-w-0 flex-1">
+              <h3
+                className="text-sm sm:text-base truncate"
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontWeight: 600,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                {basic.name}
+              </h3>
+            </Link>
+            {liveData.message && <Tips color="var(--destructive)">{liveData.message}</Tips>}
+            {basic.group && (
+              // 分组: 卡角随手写的红铅笔批注, 不加边框
+              <span
+                className="text-sm shrink-0 font-hand"
+                style={{
+                  color: "var(--pen-red)",
+                  transform: "rotate(-2deg)",
+                  display: "inline-block",
+                }}
+              >
+                #{basic.group}
+              </span>
+            )}
+          </div>
+          <div className="node-masthead-rule" />
         </div>
 
-        {/* 一级 · 资源 2×2: 凹陷成冷调副纸数据块, 视觉重心 */}
+        {/* 一级 · 资源 2×2: 账本栏线 (无上框 / 下细线 / 中缝竖线), 视觉重心 */}
         <div className="node-metric-block grid grid-cols-2 gap-x-3 gap-y-2.5">
           {[
             {
@@ -268,7 +296,7 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
             <div key={m.label} className="min-w-0">
               <div className="flex items-baseline justify-between gap-1 min-w-0">
                 <span className="eyebrow truncate">{m.label}</span>
-                <span className="font-mono font-tabular font-semibold text-base leading-tight shrink-0">
+                <span className="num-display text-lg leading-none shrink-0">
                   {m.value ?? m.pct.toFixed(0)}
                   {m.value ? "" : <span className="text-[10px] opacity-60 ml-0.5">%</span>}
                 </span>
@@ -335,13 +363,13 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
                 Latency
               </span>
               <span
-                className="font-mono font-tabular text-sm font-semibold shrink-0"
+                className="num-display text-base shrink-0"
                 style={{
                   color:
                     ping?.latest == null
                       ? "var(--ink-mute)"
                       : ping.latest <= 100
-                        ? "var(--data-2)"
+                        ? "var(--ink)"
                         : ping.latest <= 300
                           ? "var(--data-3)"
                           : "var(--pen-red)",
@@ -360,13 +388,13 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
                 Loss
               </span>
               <span
-                className="font-mono font-tabular text-sm font-semibold shrink-0"
+                className="num-display text-base shrink-0"
                 style={{
                   color:
                     ping?.loss == null
                       ? "var(--ink-mute)"
                       : ping.loss === 0
-                        ? "var(--data-2)"
+                        ? "var(--ink)"
                         : ping.loss < 5
                           ? "var(--data-3)"
                           : "var(--pen-red)",
@@ -389,20 +417,29 @@ const Node = React.memo(({ basic, live, online }: NodeProps) => {
 
         {/* 三级 · 脚注: 连接/进程/uptime + OS·arch·CPU, 淡色小字, 不抢视线 */}
         <div className="node-card-meta flex flex-col gap-0.5 text-[11px] min-w-0">
-          <div className="flex items-center justify-between gap-2 font-mono min-w-0">
-            <span className="min-w-0 flex-1 truncate">
-              TCP {liveData.connections?.tcp ?? 0} · UDP {liveData.connections?.udp ?? 0} · P{" "}
-              {liveData.process ?? 0}
-            </span>
+          {/* 连接 ···· 进程: 引导点线连接, 像目录条目 (uptime 已上移到刊头)。
+              极窄卡片下点线先收缩, 仍放不下才裁切尾部, 完整内容挂在 title 上 */}
+          <div
+            className="flex items-baseline gap-0 font-mono min-w-0 overflow-hidden"
+            title={`TCP ${liveData.connections?.tcp ?? 0} · UDP ${
+              liveData.connections?.udp ?? 0
+            } · P ${liveData.process ?? 0}`}
+          >
+            <span className="shrink-0">TCP {liveData.connections?.tcp ?? 0}</span>
+            <i className="leader" aria-hidden="true" />
+            <span className="shrink-0">UDP {liveData.connections?.udp ?? 0}</span>
+            <i className="leader" aria-hidden="true" />
+            <span className="shrink-0">P {liveData.process ?? 0}</span>
             {showIpTags && ipVersionTag && (
-              <span className="shrink-0 rounded-sm border border-green-500/30 bg-green-500/10 px-1 text-[10px] leading-3 text-green-700 dark:text-green-300">
+              // 收敛到墨色描边: 原先的绿底绿字是卡内第 4 种颜色, 与印刷收敛冲突
+              <span
+                className="ml-1.5 shrink-0 rounded-sm px-1 text-[10px] leading-3"
+                style={{
+                  border: "1px solid var(--ink-line-soft)",
+                  color: "var(--ink-soft)",
+                }}
+              >
                 {ipVersionTag}
-              </span>
-            )}
-            {liveData.uptime > 0 && (
-              <span className="flex items-center gap-0.5 shrink-0 whitespace-nowrap">
-                <Clock className="size-3" />
-                {formatUptimeShort(liveData.uptime)}
               </span>
             )}
           </div>
@@ -465,12 +502,18 @@ export const NodeGrid = ({ nodes, liveData }: NodeGridProps) => {
 
   return (
     <div className="w-full mt-4 grid items-stretch gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-      {sortedNodes.map((node) => {
+      {sortedNodes.map((node, i) => {
         const isOnline = onlineNodes.includes(node.uuid);
         const nodeData =
           liveData && liveData.data ? liveData.data[node.uuid] : undefined;
         return (
-          <Node key={node.uuid} basic={node} live={nodeData} online={isOnline} />
+          <Node
+            key={node.uuid}
+            basic={node}
+            live={nodeData}
+            online={isOnline}
+            index={i + 1}
+          />
         );
       })}
     </div>

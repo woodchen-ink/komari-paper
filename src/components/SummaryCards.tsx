@@ -24,12 +24,18 @@ import {
   DEFAULT_EXCHANGE_RATES,
   type ExchangeRates,
 } from "@/utils/exchangeRate";
-import Flag from "./Flag";
+import { regionFlagSrc } from "@/utils/regionHelper";
+import type { RegionBucket } from "@/utils/groupingHelper";
 import CountUp from "./CountUp";
 
 interface SummaryCardsProps {
   nodes: NodeBasicInfo[];
   liveData: LiveData | undefined;
+  /** 地区桶 (含计数), 由 Index 统一派生, 与节点列表筛选同源 */
+  regions: RegionBucket[];
+  /** 当前生效的地区代码, "all" 表示不筛 */
+  activeRegion: string;
+  onSelectRegion: (code: string) => void;
 }
 
 /** 网速格式化 (B/s 自适配, 与 Node.tsx 同口径) */
@@ -51,7 +57,13 @@ function formatSpeed(bytes: number): string {
  * 取代旧的单行 ticker, 铺开为一组纸卡: 在线 / 内存 / 磁盘 / 总流量 / 实时网速 / 财务,
  * 下方附按地区分布的报刊式概览条. 全部派生计算走 summaryHelper, 本组件只排版.
  */
-const SummaryCards: React.FC<SummaryCardsProps> = ({ nodes, liveData }) => {
+const SummaryCards: React.FC<SummaryCardsProps> = ({
+  nodes,
+  liveData,
+  regions,
+  activeRegion,
+  onSelectRegion,
+}) => {
   const { t } = useTranslation();
 
   const fleet = useMemo(
@@ -82,19 +94,6 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ nodes, liveData }) => {
     () => computeFinance(nodes, rates),
     [nodes, rates],
   );
-
-  // 按地区聚合在线节点数, 倒序
-  const regionRows = useMemo(() => {
-    const onlineSet = new Set(liveData?.online ?? []);
-    const map = new Map<string, number>();
-    for (const n of nodes) {
-      if (!onlineSet.has(n.uuid) || !n.region) continue;
-      map.set(n.region, (map.get(n.region) || 0) + 1);
-    }
-    return Array.from(map.entries())
-      .map(([region, count]) => ({ region, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [nodes, liveData]);
 
   const memPercent = resource.memTotal
     ? (resource.memUsed / resource.memTotal) * 100
@@ -158,36 +157,28 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ nodes, liveData }) => {
         )}
       </div>
 
-      {/* 地区概览条: 报刊式横排, 旗帜 + 计数 + 细竖线分隔 */}
-      {regionRows.length > 0 && (
-        <div className="paper-card no-tilt mt-3 px-4 py-2.5 overflow-x-auto scrollbar-hidden">
-          <div className="flex items-center gap-x-4 whitespace-nowrap">
-            <span
-              className="eyebrow shrink-0"
-              style={{ fontSize: "0.66rem" }}
-            >
+      {/* 地区条: 报刊式横排, 同时是节点列表的地区筛选器 (概览与筛选是同一份数据,
+          分成两条会重复)。计数走总节点数而非在线数 —— 与点下去筛出的数量必须一致 */}
+      {regions.length > 0 && (
+        <div className="paper-card no-tilt mt-3 px-4 py-2 overflow-x-auto scrollbar-hidden">
+          <div className="flex items-center gap-x-3 whitespace-nowrap">
+            <span className="eyebrow shrink-0" style={{ fontSize: "0.66rem" }}>
               {t("region_overview")}
             </span>
-            {regionRows.map((r, i) => (
-              <div
-                key={r.region}
-                className="inline-flex items-center gap-2 shrink-0"
-              >
-                {i > 0 && (
-                  <span
-                    aria-hidden
-                    className="inline-block h-3 w-px self-center"
-                    style={{ background: "var(--ink-line-soft)" }}
-                  />
-                )}
-                <Flag flag={r.region} />
-                <span
-                  className="font-mono font-tabular text-sm"
-                  style={{ color: "var(--ink)", letterSpacing: "-0.02em" }}
-                >
-                  {r.count}
-                </span>
-              </div>
+            <RegionChip
+              active={activeRegion === "all"}
+              onClick={() => onSelectRegion("all")}
+              label="All"
+            />
+            {regions.map((r) => (
+              <RegionChip
+                key={r.code}
+                active={activeRegion === r.code}
+                onClick={() => onSelectRegion(r.code)}
+                label={r.code}
+                flagSrc={regionFlagSrc(r.code)}
+                count={r.count}
+              />
             ))}
           </div>
         </div>
@@ -238,5 +229,55 @@ const StatCard: React.FC<StatCardProps> = React.memo(
     );
   },
 );
+
+// 地区筛选条目: 旗帜 + 代码 + 计数; active 走红铅笔下划, 与首页 GroupPill 同一套语言
+const RegionChip: React.FC<{
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  flagSrc?: string;
+  count?: number;
+}> = React.memo(({ active, onClick, label, flagSrc, count }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={active}
+    className="inline-flex items-center gap-1.5 shrink-0 h-7 px-1.5 bg-transparent transition-colors cursor-pointer"
+    style={{
+      color: active ? "var(--pen-red)" : "var(--ink-soft)",
+      borderBottom: active
+        ? "2px solid var(--pen-red)"
+        : "2px solid transparent",
+      borderRadius: 0,
+    }}
+  >
+    {flagSrc && (
+      <img
+        src={flagSrc}
+        alt=""
+        aria-hidden="true"
+        className="h-3.5 w-5 shrink-0 object-contain"
+      />
+    )}
+    <span
+      className={flagSrc ? "font-mono font-tabular text-xs" : "text-sm"}
+      style={{
+        fontWeight: active ? 600 : 400,
+        fontFamily: flagSrc ? undefined : "var(--font-serif)",
+        fontStyle: flagSrc ? undefined : active ? "italic" : "normal",
+      }}
+    >
+      {label}
+    </span>
+    {count != null && (
+      <span
+        className="font-mono font-tabular text-[10px]"
+        style={{ color: "var(--ink-mute)" }}
+      >
+        {count}
+      </span>
+    )}
+  </button>
+));
 
 export default SummaryCards;

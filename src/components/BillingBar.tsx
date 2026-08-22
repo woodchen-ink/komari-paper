@@ -63,8 +63,8 @@ const BillingBar = ({
       ? Math.min(100, Math.max(0, (diffDays / cycleDays) * 100))
       : 0;
 
-  // 阈值色: 按剩余充裕度百分比分档, 与进度条长度一致 (≤15% 红 / ≤30% 橙 / 其余绿)
-  // 已过期 fillPercent=0 落入红; 长期 fillPercent=100 落入绿
+  // 阈值色: 按剩余充裕度百分比分档, 与进度条长度一致 (≤15% 红 / ≤30% 橙 / 其余墨色)
+  // 已过期 fillPercent=0 落入红; 长期 fillPercent=100 落入墨色
   // 无法算充裕度时 (有价格但无有效周期, 不画条) 文本用中性墨色, 不误判为红
   const canRate = isLongTerm || cycleDays !== null;
   const expiryColor = !canRate
@@ -73,7 +73,7 @@ const BillingBar = ({
       ? "var(--pen-red)"
       : fillPercent <= 30
         ? "var(--data-3)"
-        : "var(--data-2)";
+        : "var(--ink-soft)";
 
   const expiryText =
     diffDays <= 0
@@ -84,16 +84,18 @@ const BillingBar = ({
 
   return (
     <div className="flex flex-col gap-1 text-[11px]" style={{ color: "var(--ink-mute)" }}>
-      <div className="flex items-center justify-between gap-2 min-w-0">
-        <span className="flex items-center gap-1 min-w-0 font-mono">
-          <Wallet className="size-3 shrink-0" />
+      {/* 价格 ···· 到期: 中间引导点线, 像账本 / 目录的条目行 */}
+      <div className="flex items-baseline gap-0 min-w-0">
+        <span className="flex items-baseline gap-1 min-w-0 font-mono">
+          <Wallet className="size-3 shrink-0 self-center" />
           <span className="truncate" title={priceText}>{priceText}</span>
         </span>
+        <i className="leader" aria-hidden="true" />
         <span
-          className="flex items-center gap-1 shrink-0 font-mono font-semibold"
+          className="flex items-baseline gap-1 shrink-0 font-mono font-semibold"
           style={{ color: expiryColor }}
         >
-          <CalendarClock className="size-3" />
+          <CalendarClock className="size-3 self-center" />
           {expiryText}
         </span>
       </div>
@@ -111,9 +113,10 @@ const BillingBar = ({
             height: "100%",
             width: `${fillPercent}%`,
             minWidth: fillPercent > 0 ? "2px" : 0,
-            // 长期: 明亮七彩渐变满条 (czl-code-skill §1.7.2 调色板); 普通: 单色阈值条
+            // 长期: 墨色斜纹满条 —— 印刷里斜纹表示"不适用 / 无限", 与"真的还剩满格"
+            // 的实心条区分开; 普通: 单色阈值实心条
             background: isLongTerm
-              ? "linear-gradient(90deg, var(--chart-bright-1), var(--chart-bright-2), var(--chart-bright-3), var(--chart-bright-6), var(--chart-bright-3), var(--chart-bright-5), var(--chart-bright-4))"
+              ? "repeating-linear-gradient(45deg, var(--ink-line-soft) 0 2px, transparent 2px 5px)"
               : expiryColor,
             transition: "width 0.35s ease-out",
           }}

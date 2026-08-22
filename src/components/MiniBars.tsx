@@ -37,10 +37,12 @@ const MiniBars = ({ points, mode = "latency", good = 100, warn = 300 }: MiniBars
 
   const peak = Math.max(...points.map((p) => p.value), 1);
 
+  // 印刷收敛: 正常一律走墨色, 只有偏高 / 丢包才上色。
+  // 满屏绿会稀释红的警示力, 墨色底噪 + 少量彩色才是印刷统计图的读法。
   const colorOf = (p: PingPoint): string => {
     if (p.lost) return "var(--pen-red)"; // 丢包: 红
-    if (mode === "loss") return "var(--data-2)"; // 丢包模式正常点: 绿
-    if (p.value <= good) return "var(--data-2)"; // 低延迟: 绿
+    if (mode === "loss") return "var(--ink-line-soft)"; // 丢包模式正常点: 淡墨 (等高密排, 压到底噪)
+    if (p.value <= good) return "var(--ink-soft)"; // 低延迟: 墨色
     if (p.value <= warn) return "var(--data-3)"; // 偏高: 黄
     return "var(--pen-red)"; // 高延迟: 红
   };

@@ -1,3 +1,47 @@
+/**
+ * 将由两个区域指示符符号组成的旗帜 emoji 转为两字母国家代码 (🇸🇬 → SG)。
+ * 非有效旗帜 emoji 返回 null。
+ */
+const getCountryCodeFromFlagEmoji = (emoji: string): string | null => {
+  // Array.from 正确处理 Unicode 代理对: 一个国旗 emoji 拆出来正好是 2 个区域指示符
+  const chars = Array.from(emoji);
+  if (chars.length !== 2) return null;
+
+  const codePoint1 = chars[0].codePointAt(0)!;
+  const codePoint2 = chars[1].codePointAt(0)!;
+
+  // 区域指示符符号范围 U+1F1E6 (🇦) ~ U+1F1FF (🇿)
+  const REGIONAL_INDICATOR_START = 0x1f1e6;
+  const ASCII_ALPHA_START = 0x41; // 'A'
+
+  if (
+    codePoint1 >= REGIONAL_INDICATOR_START && codePoint1 <= 0x1f1ff &&
+    codePoint2 >= REGIONAL_INDICATOR_START && codePoint2 <= 0x1f1ff
+  ) {
+    const letter1 = String.fromCodePoint(codePoint1 - REGIONAL_INDICATOR_START + ASCII_ALPHA_START);
+    const letter2 = String.fromCodePoint(codePoint2 - REGIONAL_INDICATOR_START + ASCII_ALPHA_START);
+    return `${letter1}${letter2}`;
+  }
+  return null;
+};
+
+/**
+ * 解析地区输入 → 大写国家代码。旗帜 emoji / 两字母 ISO 代码 / 特殊 emoji 均可,
+ * 无法识别一律回退 "UN"。结果同时是旗帜 SVG 的文件名。
+ */
+export const resolveRegionCode = (flag: string): string => {
+  const fromEmoji = getCountryCodeFromFlagEmoji(flag);
+  if (fromEmoji) return fromEmoji;
+  // 两字母 ISO 国家代码 (us → US)
+  if (flag && flag.length === 2 && /^[a-zA-Z]{2}$/.test(flag)) return flag.toUpperCase();
+  // 不符合区域指示符模式的特殊 emoji, 只能硬编码识别
+  if (flag === "🇺🇳" || flag === "🌐") return "UN";
+  return "UN";
+};
+
+/** 地区代码 → 旗帜 SVG 路径 (全项目唯一约定, 勿在别处拼这个路径) */
+export const regionFlagSrc = (code: string): string => `/assets/flags/${code}.svg`;
+
 // 地区emoji到名称的映射
 export const emojiToRegionMap: Record<string, { en: string; zh: string; aliases: string[] }> = {
   '🇭🇰': {

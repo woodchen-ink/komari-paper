@@ -6,15 +6,17 @@
  *
  * 设计语言参考: Stripe Press / Maggie Appleton / Are.na
  * 核心反差: 衬线印刷骨架 + 极克制的手写批注 + 单色系 + 等宽数字
- *   - 标题/正文: Fraunces (serif, 老书印刷感)
- *   - 中文: LXGW WenKai (霞鹜文楷, 笔锋有手写顿挫但工整)
- *   - 手写批注 (仅用于角标/日期/标签): Caveat
+ *   - 标题/正文: EB Garamond (16 世纪冲压字源的人文老式体, 重心倾斜、收笔带笔锋)
+ *   - 中文: Noto Serif SC (与拉丁同为衬线, 同族质感)
+ *   - 手写批注 (仅用于角标/日期/标签): Caveat + Ma Shan Zheng (中文行楷)
  *   - 数字 / 等宽: JetBrains Mono (机器精度)
  *
  * 不要全部用手写体, 那样廉价. 衬线骨架才显设计感.
  * ============================================== */
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Caveat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
-@import url("https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css");
+/* 字体在 index.html 用 <link> 从 Google Fonts 单一来源加载 (EB Garamond / Noto Serif SC /
+ * Caveat / Ma Shan Zheng / JetBrains Mono), 不引第三方 CDN。
+ * 不要写回这里: Tailwind v4 的 `@import "tailwindcss"` 就地展开后, 后续 `@import url(...)`
+ * 不再位于文件顶部, 按 CSS 规范失效并被构建静默丢弃 (产物里搜不到 googleapis / lxgw)。 */
 
 /* 单一纸质主题, 不再支持暗色; @custom-variant 保留为 no-op 以兼容 shadcn 组件 dark: 前缀 */
 @custom-variant dark (&:is(.never-active *));
@@ -117,15 +119,6 @@
   --data-4: #6a3a7a;            /* 紫 */
   --data-5: #b8331b;            /* 朱红 */
 
-  /* 明亮七彩 — 取自 czl-code-skill §1.7.2 定性调色板 (明亮模式),
-     用于"长期"到期满条等需鲜活观感处; 鲜活不刺眼, 暖色通透不发土 */
-  --chart-bright-1: #3975e0;   /* 钴蓝 */
-  --chart-bright-2: #4caf33;   /* 翠绿 */
-  --chart-bright-3: #f58d31;   /* 暖橙 */
-  --chart-bright-4: #7256d4;   /* 紫罗兰 */
-  --chart-bright-5: #e3496f;   /* 玫粉 */
-  --chart-bright-6: #ecb333;   /* 金黄 */
-
   --background: var(--paper);
   --foreground: var(--ink);
   --card: var(--paper-card);
@@ -166,16 +159,38 @@
  * 字体栈 (Editorial Paper)
  *
  * 反差是关键: 主体走衬线印刷, 手写体只用于"批注/标签/页码"
- * - serif (主标题/正文): Fraunces 衬线 + 中文霞鹜文楷
- * - hand (批注/角标): Caveat, 极少量使用
+ * - serif (主标题/正文): EB Garamond 衬线 + 中文 Noto Serif SC
+ * - hand (批注/角标): Caveat + 中文 Ma Shan Zheng (行楷), 极少量使用
  * - mono (数字/数据): JetBrains Mono, 让数字"机器精确"
  * ============================================== */
 :root {
-  --font-serif: "Fraunces", "LXGW WenKai", "霞鹜文楷", Georgia, "Times New Roman", serif;
-  --font-sans: "Fraunces", "LXGW WenKai", "霞鹜文楷", Georgia, serif; /* 项目里 sans 也走衬线 */
-  --font-hand: "Caveat", "LXGW WenKai", "霞鹜文楷", cursive;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-serif: "EB Garamond", "Noto Serif SC", Georgia, "Times New Roman", serif;
+  --font-sans: "EB Garamond", "Noto Serif SC", Georgia, serif; /* 项目里 sans 也走衬线 */
+  --font-hand: "Caveat", "Ma Shan Zheng", cursive;
+  /* 栈尾必须留中文兜底: JetBrains Mono 无 CJK 字形, 否则 .font-mono 容器里的中文
+   * (图表任务名 / 标签 / 单位) 会掉到系统等宽宋体, 与全站中文字体脱节 */
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, "Noto Serif SC", monospace;
   --font-data: var(--font-mono); /* 旧别名, 兼容现有引用 */
+
+  /* 印刷主数值字体。EB Garamond 只有 wght 轴, 故 --display-axes 为 normal。
+   * 该 token 是换字体时的唯一入口: 若换成带 opsz / SOFT / WONK 的可变字体 (如 Fraunces),
+   * 只改这两行 —— 组件层已不含任何字体专有的可变轴设置, 不要写回去。 */
+  --font-display: var(--font-serif);
+  --display-axes: normal;
+}
+
+/* Radix Themes 把字族挂在自己的 token 上 (.radix-themes { --default-font-family: -apple-system,
+ * ..., "Segoe UI" }), 且是非 layer 规则 —— 它压过 @layer base 里的 html/body 字族, 于是所有
+ * .rt-* 组件 (SegmentedControl / Button / Text / Heading / 输入框) 全退回系统 sans。
+ * main.tsx 里 global.css 还先于 Radix 样式导入, 同特异性下 Radix 排后面获胜。
+ * 故意写成双类名 (0,2,0) 提高特异性: 不依赖导入顺序, 也不用 !important。 */
+.radix-themes.radix-themes {
+  --default-font-family: var(--font-serif);
+  --heading-font-family: var(--font-serif);
+  --strong-font-family: var(--font-serif);
+  --em-font-family: var(--font-serif);
+  --quote-font-family: var(--font-serif);
+  --code-font-family: var(--font-mono);
 }
 
 /* ==============================================
@@ -219,9 +234,7 @@
   h1 {
     font-weight: 700;
     letter-spacing: -0.02em;
-    font-variation-settings: "opsz" 96, "SOFT" 0, "WONK" 1;
   }
-  h2 { font-variation-settings: "opsz" 48; }
 
   /* 等宽数字 + 表格、代码 */
   .font-mono, code, kbd, pre, samp,
@@ -370,7 +383,7 @@ body, * {
 
 /* ==============================================
  * Header 文字按钮 (Login / OAuth / 状态钮): 纸条文字钮
- *   与 .paper-icon-btn 同套质感, 等高 2.25rem; Fraunces 衬线 + 墨色字
+ *   与 .paper-icon-btn 同套质感, 等高 2.25rem; 衬线 + 墨色字
  *   替代 Radix 默认紫色 <Button>, 让未登录态的 Login 钮与方钮成套
  *   disabled: 降透明度并去交互 (loading / error 复用)
  * ============================================== */
@@ -460,10 +473,30 @@ body, * {
  *   三级 .node-card-meta    — 连接/OS/CPU 脚注, 淡色 + 顶部极细分隔线
  * ============================================== */
 .node-metric-block {
-  background: var(--paper-cool);
-  border: 1px solid var(--ink-line-soft);
-  border-radius: 2px;
-  padding: 0.625rem 0.75rem;
+  position: relative;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--ink-line-soft);
+  border-radius: 0;
+  padding: 0 0 0.6rem;
+}
+/* 两列中缝竖线: 印刷账本的栏线, 取代原来的冷调底色凹陷块 */
+.node-metric-block::after {
+  content: "";
+  position: absolute;
+  top: 0.1rem;
+  bottom: 0.6rem;
+  left: calc(50% - 0.5px);
+  width: 1px;
+  background: var(--ink-line-soft);
+  pointer-events: none;
+}
+
+/* 刊头分隔线: 卡片标题下的 2px 粗线, 杂志条目的骨架 */
+.node-masthead-rule {
+  height: 2px;
+  background: var(--ink);
+  opacity: 0.78;
 }
 
 .node-card-meta {
@@ -651,16 +684,90 @@ body, * {
   color: var(--ink-mute);
 }
 
+/* 印刷主数值: 衬线大数 + 等宽附表的层次差, 取代通篇等宽的终端感。
+ * 只给"主数值"用 (资源百分比 / 延迟 / 丢包), 辅助小字继续走 .font-mono。
+ * 定义在 @layer base 之外, 天然压过 base 里 .font-mono 的 !important 字族。 */
+.num-display {
+  font-family: var(--font-display);
+  font-variation-settings: var(--display-axes);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* 引导点线: 目录 / 账本里连接标签与数值的那排点。
+ * 作为 flex 子项吃掉中间空档; 空间不足时先缩自己, min-width 保底可读 */
+.leader {
+  flex: 1 1 auto;
+  min-width: 0.6rem;
+  align-self: flex-end;
+  height: 1px;
+  margin: 0 0.35em 0.32em;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ink-line-soft) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+/* 标尺式用量条: 基线 + 四分刻度 + 实心墨条。
+ * 纯实色填充块是最"web 仪表盘"的元素, 换成标尺后读作印刷统计图 */
+.rule-bar {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-right: 1px solid var(--ink-line-soft); /* 收口: 补上 100% 处的刻度 */
+}
+.rule-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--ink-line-soft) 0 1px,
+    transparent 1px 25%
+  );
+}
+.rule-bar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ink-line-soft);
+}
+.rule-bar-fill {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  z-index: 1;
+  transition: width 0.35s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rule-bar-fill { transition: none; }
+}
+
+/* 横向筛选条: 隐藏滚动条但保留滚动 (地区旗帜条 / 分组 pill 行)。
+ * 这两处一直在用 .scrollbar-hidden 但类未定义, 顺带补上 */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
 /* Drop cap: 段首大字母 (装饰文章引言用), 衬线粗体 */
 .drop-cap::first-letter {
   font-family: var(--font-serif);
-  font-weight: 900;
+  font-weight: 800; /* EB Garamond 最粗 800 */
   font-size: 3.6em;
   line-height: 0.85;
   float: left;
   margin: 0.05em 0.08em 0 -0.04em;
   color: var(--ink);
-  font-variation-settings: "opsz" 144, "SOFT" 100;
 }
 
 /* Editorial rule: 极细水平细线, 用于章节分割 */

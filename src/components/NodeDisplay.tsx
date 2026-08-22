@@ -4,15 +4,24 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { NodeBasicInfo } from "@/contexts/NodeListContext";
 import type { LiveData } from "../types/LiveData";
 import { NodeGrid } from "./Node";
-import { isRegionMatch } from "@/utils/regionHelper";
+import { isRegionMatch, resolveRegionCode } from "@/utils/regionHelper";
 
 interface NodeDisplayProps {
   nodes: NodeBasicInfo[];
   liveData: LiveData;
+  /**
+   * 生效中的地区代码 ("all" 表示不筛)。选择入口是 SummaryCards 的地区条 ——
+   * 概览与筛选是同一份数据, 这里不再自建第二条地区行。
+   */
+  activeRegion: string;
 }
 
 // 节点列表展示: 搜索 + 分组筛选 + 网格列表 (Liquid Glass 主题, 仅保留 grid 视图)
-const NodeDisplay: React.FC<NodeDisplayProps> = ({ nodes, liveData }) => {
+const NodeDisplay: React.FC<NodeDisplayProps> = ({
+  nodes,
+  liveData,
+  activeRegion,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGroup, setSelectedGroup] = useLocalStorage<string>(
     "nodeSelectedGroup",
@@ -52,16 +61,26 @@ const NodeDisplay: React.FC<NodeDisplayProps> = ({ nodes, liveData }) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [searchTerm]);
 
-  // 过滤节点: 先按分组, 再按搜索词 (名称/系统/架构/地区/价格/状态)
-  const filteredNodes = useMemo(() => {
+  // 过滤链: 地区 → 分组 (两者可叠加) → 搜索词
+  const scopedNodes = useMemo(() => {
     let result = nodes;
+    if (activeRegion !== "all") {
+      result = result.filter(
+        (node) => node.region && resolveRegionCode(node.region) === activeRegion,
+      );
+    }
     if (selectedGroup !== "all") {
       result = result.filter((node) => node.group === selectedGroup);
     }
-    if (!searchTerm.trim()) return result;
+    return result;
+  }, [nodes, activeRegion, selectedGroup]);
+
+  // 搜索词匹配 名称/系统/架构/地区/价格/状态, 只在已筛定的范围内进行
+  const filteredNodes = useMemo(() => {
+    if (!searchTerm.trim()) return scopedNodes;
 
     const term = searchTerm.toLowerCase().trim();
-    return result.filter((node) => {
+    return scopedNodes.filter((node) => {
       const basicMatch =
         node.name.toLowerCase().includes(term) ||
         node.os.toLowerCase().includes(term) ||
@@ -75,15 +94,19 @@ const NodeDisplay: React.FC<NodeDisplayProps> = ({ nodes, liveData }) => {
         (term === "offline" && !isOnline);
       return basicMatch || regionMatch || priceMatch || statusMatch;
     });
-  }, [nodes, searchTerm, liveData, selectedGroup]);
+  }, [scopedNodes, searchTerm, liveData]);
 
-  const totalCountInScope =
-    selectedGroup === "all"
-      ? nodes.length
-      : nodes.filter((n) => n.group === selectedGroup).length;
+  const totalCountInScope = scopedNodes.length;
   const onlineInFiltered = filteredNodes.filter((n) =>
     liveData?.online?.includes(n.uuid),
   ).length;
+  // 当前生效的筛选范围描述, 用于页眉计数行 (两个维度都可能生效)
+  const scopeLabel = [
+    activeRegion !== "all" ? activeRegion : null,
+    selectedGroup !== "all" ? selectedGroup : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="w-full">
@@ -101,7 +124,6 @@ const NodeDisplay: React.FC<NodeDisplayProps> = ({ nodes, liveData }) => {
                 fontSize: "clamp(1.4rem, 2.5vw, 1.8rem)",
                 letterSpacing: "-0.02em",
                 lineHeight: 1.1,
-                fontVariationSettings: '"opsz" 96, "SOFT" 30',
               }}
             >
               Servers
@@ -113,10 +135,10 @@ const NodeDisplay: React.FC<NodeDisplayProps> = ({ nodes, liveData }) => {
           >
             {searchTerm.trim() ? (
               <>{filteredNodes.length} / {totalCountInScope}</>
-            ) : selectedGroup === "all" ? (
+            ) : scopeLabel === "" ? (
               <>{liveData?.online?.length || 0} online · {nodes.length} total</>
             ) : (
-              <>{onlineInFiltered} online · {filteredNodes.length} in {selectedGroup}</>
+              <>{onlineInFiltered} online · {filteredNodes.length} in {scopeLabel}</>
             )}
           </div>
         </div>
@@ -199,11 +221,13 @@ const NodeDisplay: React.FC<NodeDisplayProps> = ({ nodes, liveData }) => {
             className="text-2xl mb-2 font-hand"
             style={{ color: "var(--pen-red)", transform: "rotate(-2deg)" }}
           >
-            {searchTerm.trim() ? "Nothing here." : "No servers yet."}
+            {searchTerm.trim() || scopeLabel
+              ? "Nothing here."
+              : "No servers yet."}
           </p>
-          {searchTerm.trim() && (
+          {(searchTerm.trim() || scopeLabel) && (
             <p className="text-sm" style={{ color: "var(--ink-mute)" }}>
-              Try another keyword
+              {searchTerm.trim() ? "Try another keyword" : `No server in ${scopeLabel}`}
             </p>
           )}
         </div>
