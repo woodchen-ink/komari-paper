@@ -11,7 +11,8 @@ import { formatBytes } from "@/utils/unitHelper";
 import { computeTrafficUsage, usageColor } from "@/utils/trafficHelper";
 import { getOSImage, getOSName } from "@/utils";
 
-import UsageBar from "./UsageBar";
+import NumWash from "./NumWash";
+import { healthColor, latencyLevel, lossLevel } from "@/utils/healthHelper";
 import Flag from "./Flag";
 import Tips from "./ui/tips";
 import PriceTags from "./PriceTags";
@@ -124,7 +125,18 @@ const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
   );
 
   const showIpTags = publicInfo?.theme_settings?.showIpTagsInCard;
-  const ipVersionTag = basic.ipv4 && basic.ipv6 ? "V10" : basic.ipv4 ? "V4" : basic.ipv6 ? "V6" : "";
+  // 地址族标记: 双栈 V10 (V4 + V6 = V10, 有意为之的小设计), 单栈 V4 / V6。
+  // title 里给出全称, 避免只看标记时读不出含义
+  const ipVersionTag =
+    basic.ipv4 && basic.ipv6 ? "V10" : basic.ipv4 ? "V4" : basic.ipv6 ? "V6" : "";
+  const ipVersionTitle =
+    basic.ipv4 && basic.ipv6
+      ? "IPv4 + IPv6"
+      : basic.ipv4
+        ? "IPv4"
+        : basic.ipv6
+          ? "IPv6"
+          : "";
 
   // 离线节点：精简卡片，红色脉冲点 + 关键标签
   if (!online) {
@@ -257,6 +269,14 @@ const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
                 #{basic.group}
               </span>
             )}
+            {showIpTags && ipVersionTag && (
+              // 地址族与旗帜 / 分组同属"身份"信息, 归到名称行右端。
+              // 实心墨块小标签 (.paper-tag): 卡内唯一的反白元素, 面积极小但
+              // 一眼可见 —— 这里不能再用描边框, 卡内 1px 描边已经太多
+              <span className="paper-tag shrink-0" title={ipVersionTitle}>
+                {ipVersionTag}
+              </span>
+            )}
           </div>
           <div className="node-masthead-rule" />
         </div>
@@ -294,16 +314,17 @@ const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
             },
           ].map((m) => (
             <div key={m.label} className="min-w-0">
-              <div className="flex items-baseline justify-between gap-1 min-w-0">
-                <span className="eyebrow truncate">{m.label}</span>
-                <span className="num-display text-lg leading-none shrink-0">
-                  {m.value ?? m.pct.toFixed(0)}
-                  {m.value ? "" : <span className="text-[10px] opacity-60 ml-0.5">%</span>}
+              {/* 底纹量程 = 整格宽度, 不是数值自身宽度。挂在数值上时 1% 的底纹
+                  只有数字宽度的 1%, 等于看不见; 铺满整格后低值也有可辨的一小条 */}
+              <NumWash percent={m.pct} className="block w-full">
+                <span className="flex items-baseline justify-between gap-1 min-w-0">
+                  <span className="eyebrow truncate">{m.label}</span>
+                  <span className="text-2xl leading-none shrink-0">
+                    {m.value ?? m.pct.toFixed(0)}
+                    {m.value ? "" : <span className="text-[11px] opacity-55 ml-0.5">%</span>}
+                  </span>
                 </span>
-              </div>
-              <div className="mt-1">
-                <UsageBar value={m.pct} label="" compact />
-              </div>
+              </NumWash>
               {m.sub && (
                 <div
                   className="font-mono text-[11px] mt-1 truncate"
@@ -317,6 +338,57 @@ const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
           ))}
         </div>
 
+        {/* 二级 · 健康: 延迟 / 丢包 一行两列, 各自标签行 + 半宽柱图 (hover tooltip) */}
+        <div className="grid grid-cols-2 gap-x-3">
+          {/* 延迟 */}
+          <div className="min-w-0">
+            {/* 这两格不加用量底纹: 底下的 MiniBars 是"逐点"着色 (哪一采样慢 /
+                哪一采样丢包), 而底纹只能按聚合值涂成一整片单色, 盖在柱图后面
+                会把逐点信息糊成一片 —— 延迟看不出"偶发尖峰", 丢包看不出
+                "丢在哪一段"。数值本身的阈值色已经给出当前好坏, 够了。 */}
+            <div className="flex items-center justify-between gap-1 mb-1">
+              <span className="flex items-center gap-1 eyebrow">
+                <Gauge className="size-3" />
+                Latency
+              </span>
+              <span
+                className="num-display text-base shrink-0"
+                style={{
+                  color:
+                    ping?.latest == null
+                      ? "var(--ink-mute)"
+                      : healthColor(latencyLevel(ping.latest)),
+                }}
+              >
+                {ping?.latest == null ? "—" : `${Math.round(ping.latest)}ms`}
+              </span>
+            </div>
+            <MiniBars points={ping?.points ?? []} mode="latency" />
+          </div>
+          {/* 丢包 (0 绿 / <5% 零星丢包黄 / ≥5% 持续丢包红), 与延迟分级同一套色阶 */}
+          <div className="min-w-0">
+            <div className="flex items-center justify-between gap-1 mb-1">
+              <span className="flex items-center gap-1 eyebrow">
+                <Activity className="size-3" />
+                Loss
+              </span>
+              <span
+                className="num-display text-base shrink-0"
+                style={{
+                  color:
+                    ping?.loss == null
+                      ? "var(--ink-mute)"
+                      : healthColor(lossLevel(ping.loss)),
+                }}
+              >
+                {ping?.loss == null ? "—" : `${ping.loss.toFixed(1)}%`}
+              </span>
+            </div>
+            <MiniBars points={ping?.points ?? []} mode="loss" />
+          </div>
+        </div>
+
+        {/* 价格 + 到期剩余进度条 (取代底部 badge, 紧贴脚注上方作为元信息) */}
         {/* 二级 · 网络: 网速 / 流量 */}
         <div className="grid grid-cols-2 gap-x-3 gap-y-2 font-mono font-tabular text-xs">
           <div className="min-w-0">
@@ -353,61 +425,6 @@ const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
           </div>
         </div>
 
-        {/* 二级 · 健康: 延迟 / 丢包 一行两列, 各自标签行 + 半宽柱图 (hover tooltip) */}
-        <div className="grid grid-cols-2 gap-x-3">
-          {/* 延迟 */}
-          <div className="min-w-0">
-            <div className="flex items-center justify-between gap-1 mb-1">
-              <span className="flex items-center gap-1 eyebrow">
-                <Gauge className="size-3" />
-                Latency
-              </span>
-              <span
-                className="num-display text-base shrink-0"
-                style={{
-                  color:
-                    ping?.latest == null
-                      ? "var(--ink-mute)"
-                      : ping.latest <= 100
-                        ? "var(--ink)"
-                        : ping.latest <= 300
-                          ? "var(--data-3)"
-                          : "var(--pen-red)",
-                }}
-              >
-                {ping?.latest == null ? "—" : `${Math.round(ping.latest)}ms`}
-              </span>
-            </div>
-            <MiniBars points={ping?.points ?? []} mode="latency" />
-          </div>
-          {/* 丢包 (0 绿 / <5% 零星丢包黄 / ≥5% 持续丢包红), 与延迟分级同一套色阶 */}
-          <div className="min-w-0">
-            <div className="flex items-center justify-between gap-1 mb-1">
-              <span className="flex items-center gap-1 eyebrow">
-                <Activity className="size-3" />
-                Loss
-              </span>
-              <span
-                className="num-display text-base shrink-0"
-                style={{
-                  color:
-                    ping?.loss == null
-                      ? "var(--ink-mute)"
-                      : ping.loss === 0
-                        ? "var(--ink)"
-                        : ping.loss < 5
-                          ? "var(--data-3)"
-                          : "var(--pen-red)",
-                }}
-              >
-                {ping?.loss == null ? "—" : `${ping.loss.toFixed(1)}%`}
-              </span>
-            </div>
-            <MiniBars points={ping?.points ?? []} mode="loss" />
-          </div>
-        </div>
-
-        {/* 价格 + 到期剩余进度条 (取代底部 badge, 紧贴脚注上方作为元信息) */}
         <BillingBar
           price={basic.price}
           billing_cycle={basic.billing_cycle}
@@ -430,18 +447,6 @@ const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
             <span className="shrink-0">UDP {liveData.connections?.udp ?? 0}</span>
             <i className="leader" aria-hidden="true" />
             <span className="shrink-0">P {liveData.process ?? 0}</span>
-            {showIpTags && ipVersionTag && (
-              // 收敛到墨色描边: 原先的绿底绿字是卡内第 4 种颜色, 与印刷收敛冲突
-              <span
-                className="ml-1.5 shrink-0 rounded-sm px-1 text-[10px] leading-3"
-                style={{
-                  border: "1px solid var(--ink-line-soft)",
-                  color: "var(--ink-soft)",
-                }}
-              >
-                {ipVersionTag}
-              </span>
-            )}
           </div>
           <div
             className="flex items-center gap-1.5 min-w-0"

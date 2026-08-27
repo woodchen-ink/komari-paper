@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PingPoint } from "@/hooks/useNodePing";
+import { LATENCY_GOOD, LATENCY_WARN } from "@/utils/healthHelper";
 
 /**
  * 便签卡迷你柱图 (纯 CSS, 不引 Recharts) + hover 浮层 tooltip
@@ -21,7 +22,12 @@ function fmtTime(iso: string): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const MiniBars = ({ points, mode = "latency", good = 100, warn = 300 }: MiniBarsProps) => {
+const MiniBars = ({
+  points,
+  mode = "latency",
+  good = LATENCY_GOOD,
+  warn = LATENCY_WARN,
+}: MiniBarsProps) => {
   const [hover, setHover] = useState<number | null>(null);
 
   if (!points.length) {

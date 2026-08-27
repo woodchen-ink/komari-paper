@@ -4,7 +4,7 @@ import { useLiveData } from "@/contexts/LiveDataContext";
 import { formatUptime } from "./Node";
 import { formatBytes } from "@/utils/unitHelper";
 import { computeTrafficUsage } from "@/utils/trafficHelper";
-import UsageBar from "./UsageBar";
+import NumWash from "./NumWash";
 
 type DetailsGridProps = {
   uuid: string;
@@ -13,21 +13,24 @@ type DetailsGridProps = {
 };
 
 /**
- * 数据块外壳: 每个指标自成一格 (冷调副纸凹陷 + 软描边),
- * 用底色+边框做卡间分隔, 取代原先"裸格子靠间距区分"的弱层次
+ * 数据块外壳: 每个指标自成一格, 底部一条细线作行分隔。
+ *
+ * 不要复用便签卡的 .node-metric-block —— 那个类的 ::after 在 50% 处画
+ * "两栏账本中缝竖线", 在便签卡里它分隔左右两格是对的, 但详情页是每格
+ * 独立的多列网格, 竖线会落在每个格子正中间, 读作一堆游离的多余竖线。
  */
 function MetricBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="node-metric-block flex flex-col gap-1 min-w-0 px-2.5! py-2!">
+    <div className="flex flex-col gap-1 min-w-0 pb-2 border-b border-(--ink-line-soft)">
       {children}
     </div>
   );
 }
 
 /**
- * 带进度条指标 (CPU/RAM/DISK/SWAP/GPU):
- * 标签 → 满宽进度条 (视觉锚) → 百分比(主) + 已用/总量(弱) 同基线一行
- * 进度条承担信息量, 不再是 sub 上方那条被压扁的细槽
+ * 用量指标 (CPU/RAM/DISK/SWAP/GPU):
+ * 标签 → 百分比(主, 背后带用量底纹) + 已用/总量(弱) 同基线一行。
+ * 用量画在数值背后的淡墨底纹上, 不占额外行高也不出现条状物 (见 NumWash)。
  */
 function BarCell({
   label,
@@ -41,11 +44,10 @@ function BarCell({
   return (
     <MetricBox>
       <span className="eyebrow truncate">{label}</span>
-      <UsageBar value={percent} label="" compact />
       <div className="flex items-baseline justify-between gap-2 min-w-0">
-        <span className="font-mono font-tabular font-semibold text-sm shrink-0">
+        <NumWash percent={percent} className="text-base shrink-0">
           {percent.toFixed(1)}%
-        </span>
+        </NumWash>
         <span
           className="font-mono text-[11px] truncate text-right"
           style={{ color: "var(--ink-mute)" }}
@@ -105,20 +107,22 @@ function StatCell({
   label: string;
   value: string;
   sub?: string;
-  // 可选进度条 (负载折算百分比用); 不传则退化为纯标量格
+  // 传入时主值背后带用量底纹 (负载折算百分比用); 不传则是纯标量, 无底纹
   bar?: number;
 }) {
   return (
     <MetricBox>
       <span className="eyebrow truncate">{label}</span>
-      {bar !== undefined && <UsageBar value={bar} label="" compact />}
       <div className="flex items-baseline gap-2 min-w-0">
-        <span
-          className="font-mono font-tabular font-semibold text-sm shrink-0"
-          title={value}
-        >
-          {value}
-        </span>
+        {bar !== undefined ? (
+          <NumWash percent={bar} className="text-base shrink-0">
+            {value}
+          </NumWash>
+        ) : (
+          <span className="num-display text-base shrink-0" title={value}>
+            {value}
+          </span>
+        )}
         {sub && (
           <span
             className="font-mono text-[11px] truncate"

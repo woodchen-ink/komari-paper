@@ -20,6 +20,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/contexts/`: `PublicInfoContext`、`LiveDataContext` (实时数据)、`NodeListContext` (节点元信息)、`RPC2Context` (RPC 调用)
 - `src/lib/api.ts`、`src/lib/rpc2.ts`: API / RPC 客户端
 - `src/utils/regionHelper.ts`: 地区工具唯一归属地 —— `resolveRegionCode` (旗帜 emoji / 两字母 ISO / 特殊 emoji → 大写代码, 回退 `UN`, 结果即旗帜 SVG 文件名)、`regionFlagSrc` (**全项目唯一的旗帜路径约定, 勿在别处拼**)、`isRegionMatch` / `getRegionDisplayName` 等。`Flag.tsx` 只负责渲染, 不再自带解析逻辑
+- `src/utils/healthHelper.ts`: 网络质量阈值口径唯一归属地 —— `LATENCY_GOOD` (100ms) / `LATENCY_WARN` (300ms) / `LOSS_WARN` (5%) 常量 + `latencyLevel` / `lossLevel` (→ `HealthLevel`) + `healthColor` (档位 → 墨/赭黄/红)。原先这套阈值在 `Node.tsx` 内联三元与 `MiniBars.tsx` 的 `colorOf` 里各写一遍, 现统一到这里, 改档位只改一个文件
 - `src/utils/groupingHelper.ts`: 分组维度抽象 —— `GroupDimension` (`"group" | "region"`)、`bucketKeyOf` (按维度取桶键, 无值返回 null)、`hasCustomGroups` (决定是否自动退回按地区)、`regionBucketsOf` (地区归桶 + 计数, 多者在前)。首页地区筛选与详情页侧栏共用这一份
 - `src/types/LiveData.tsx`: `LiveData`、`Record` 实时数据类型
 - `src/contexts/NodeListContext.tsx`: `NodeBasicInfo` 节点元信息类型
@@ -72,7 +73,10 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `.eyebrow`: 杂志栏目名 (衬线 italic + 字间距 + 全大写 + 极小号)
 - `.num-display`: **印刷主数值** (衬线 + `--display-axes` + tabular/lining)。卡内只给主数值用 (资源百分比 / 延迟 / 丢包), 辅助小字继续 `.font-mono`, 靠"衬线大数 + 等宽附表"建立印刷层次而非通篇等宽的终端感。定义在 `@layer base` 之外, 天然压过 base 里 `.font-mono` 的 `!important` 字族
 - `.leader`: **引导点线** (目录 / 账本里连接标签与数值的那排点)。作 flex 子项吃掉中间空档, 空间不足先缩自己 (`min-width: .6rem` 保底)
-- `.rule-bar` / `.rule-bar-fill`: **标尺式用量条** (基线 + 四分刻度 + 3px 实心墨条), 取代纯实色填充块 —— 后者是最"web 仪表盘"的元素
+- `.num-wash`: **印张式用量底纹** —— 用量画在数值**背后**, 从左灌到 N% 的一块淡墨底纹 (`::before` + `z-index:-1`), 数值本身始终满墨。底纹按阈值分档换色换浓度: 常态墨 16% / ≥60% 赭黄 22% / ≥80% 红 28%, 色相与浓度双通道, 高负载格子在余光里就能跳出来。**首页卡与详情页的用量指标一律走这个**
+  - **数值必须满墨, 这是硬约束不是风格**: 曾试过让数字字形自身按液位从下往上填充, 但健康机队常态就在低位 (CPU 0.8%), 字形只有底部一丝被灌墨, 整个数字读作"没加载出来"。用量可以弱, 数值不能弱
+- `.paper-tag`: **纸感小标签** —— `--ink-soft` 实心墨块 + 纸色反白字, 1px 近方角, 10px mono。卡内唯一的反白元素, 面积极小但一眼可见 (地址族标记用)。用 `--ink-soft` 不用纯 `--ink`: 它是静态属性, 不该比节点名还重; 不用 pill 圆角 (那是 web badge 的语言)
+- `.rule-bar` / `.rule-bar-fill`: 标尺式用量条 (基线 + 四分刻度 + 3px 实心墨条)。**仅剩 `NodeTable` 表格行在用** —— 密集表格行数值字号太小, 底纹面积不足以读出比例; 卡片与详情页均已改走 `.num-wash`
 - `.node-masthead-rule`: 节点卡标题下的 2px 粗墨线 (刊头骨架)
 - `.drop-cap::first-letter`: 段首大字母, Fraunces 900 + opsz 144 + SOFT 100
 - `.editorial-rule` / `.thick`: 极细 (1px) / 加粗 (2px) 水平分隔线
@@ -90,8 +94,11 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/components/DynamicBackground.tsx`: 纸面背景层 —— 用户自定义背景图 (sepia + multiply 半透明叠层, "夹照片"风格) + 其上的纸纹固定层 (细节见「纸纹背景」); vignette / 咖啡渍 / 墨点均已移除
 - `src/components/Node.tsx`: 便签风格紧凑节点卡 (`paper-card + node-card`), 信息密度高且分三级层次; `NodeGrid` 响应式网格 (手机 1 / 平板 2 / 笔记本 3 / 大屏 `2xl` 4 列, `items-stretch` 同行等高)
   - **三级信息层次** (靠规尺线 + 字阶分层, 不靠底色块): ① 资源块 (`.node-metric-block` 账本栏线 —— 无上框 / 下细线 / `::after` 中缝竖线, 视觉重心) ② 网络/健康 (主纸平铺墨色) ③ 脚注 (`.node-card-meta` 淡色 + 顶部细线)
-  - **印刷收敛**: 卡内常态只有墨黑 + 少量红。用量条 / MiniBars / BillingBar 到期的常态档全部走墨色, 只有警示 (赭黄) 与危险 (红) 才上色; IP 版本 badge 也从绿底绿字收敛为墨色描边。满屏绿会稀释红的警示力
-  - 卡内结构 (在线): **刊头** (`No.03` ···· uptime, `.leader` 点线连接。uptime 放这里是因为版式上它等同刊期/日期, 也让脚注行让出一格; 右端**不放地区代码** —— 旗帜与 `#group` 已各带一次地域信息, 且不少用户直接按国家简码分组, 再加一次是三重冗余) → 名称行 (旗 + 名衬线 600 + `#group` 红铅笔批注) → `.node-masthead-rule` 2px 粗线 → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + `.num-display` 数值 + `UsageBar compact` + 已用/总量 mono 小字) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → **健康 2 列** (延迟 / 丢包, `.num-display` 数值带阈值色 + `MiniBars`; 延迟 ≤100 墨 / ≤300 黄 / 更高红, 丢包 0 墨 / <5% 黄 / ≥5% 红) → `BillingBar` (价格 ···· 到期, 点线连接) → **脚注** (TCP ···· UDP ···· 进程 点线连接 / OS·arch·CPU型号) → tags (`PriceTags layout="grid2" showPrice={false}`, 仅自定义 tags, 无 tags 不占位)
+  - **印刷收敛**: 卡内常态只有墨黑 + 少量红。用量底纹 / MiniBars / BillingBar 到期的常态档全部走墨色, 只有警示 (赭黄) 与危险 (红) 才上色; 地址族标签走墨块反白, 不占用任何语义色。满屏绿会稀释红的警示力
+  - 卡内结构 (在线): **刊头** (`No.03` ···· uptime, `.leader` 点线连接。uptime 放这里是因为版式上它等同刊期/日期, 也让脚注行让出一格; 右端**不放地区代码** —— 旗帜与 `#group` 已各带一次地域信息, 且不少用户直接按国家简码分组, 再加一次是三重冗余) → 名称行 (旗 + 名衬线 600 + `#group` 红铅笔批注 + 右端 `.paper-tag` 地址族标签) → `.node-masthead-rule` 2px 粗线 → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + `NumWash` 数值 (背后带用量底纹) + 已用/总量 mono 小字, 无进度条) → **健康 2 列** (延迟 / 丢包, `.num-display` 数值带阈值色 + `MiniBars`; 延迟 ≤100 墨 / ≤300 黄 / 更高红, 丢包 0 墨 / <5% 黄 / ≥5% 红) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → `BillingBar` (价格 ···· 到期, 点线连接) → **脚注** (TCP ···· UDP ···· 进程 点线连接 / OS·arch·CPU型号) → tags (`PriceTags layout="grid2" showPrice={false}`, 仅自定义 tags, 无 tags 不占位)
+  - **健康两格 (延迟 / 丢包) 不加用量底纹**: 底下的 `MiniBars` 是**逐点**着色 (延迟看哪一采样慢, 丢包看丢在哪一段), 而底纹只能按聚合值涂成一整片单色, 盖在柱图后面会把逐点信息糊掉 —— 黄底吞掉红尖峰, 红底吞掉灰底噪。数值自身的阈值色已给出"当前好坏", 够了。试过一次, 信息表达是错的
+  - **健康排在网络之上**: 健康两格带 `MiniBars`, 是资源格之后视觉最重的块, 紧接刊头粗线能撑住卡片重心; 网络/流量是纯 mono 文本, 落到下半与 `BillingBar` 相邻更稳
+  - 地址族标签 (`V4` / `V6` / **`V10` = 双栈, 4+6, 有意为之**) 放名称行右端, 与旗帜 / `#group` 同属"身份"信息; 走 `.paper-tag` 实心墨块而非描边 —— 卡内 1px 描边已经很多, 再加描边框只会混进背景
   - 刊头编号来自 `NodeGrid` 传入的 `index` prop (从 1 起)
   - 脚注点线行在极窄卡片下先缩点线, 仍放不下才裁切尾部 (`overflow-hidden`), 完整内容挂在 `title` 上
   - 价格/到期不再走底部 badge: 改由 `BillingBar` 在脚注上方渲染 (价格 `Wallet` 图标 + 文本 ···· 到期剩余充裕度进度条 + 剩余天数, 阈值色 ≤15% 红 / ≤30% 橙 / 其余墨色; 无有效周期不画条)。**长期 = 墨色 45° 斜纹满条** (印刷里斜纹表示"不适用 / 无限", 与"真剩满格"的实心条区分); 原 `--chart-bright-1..6` 七彩渐变已删, token 一并移除
@@ -104,8 +111,9 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - 多 task 取延迟最低者; 丢包率 = `value<0 计数 / 总计 × 100`; 失败/无数据返回 null 不阻塞
 - `src/components/MiniBars.tsx`: 纯 CSS 迷你柱图 (不引 Recharts), 柱高 = 延迟相对峰值占比, 阈值色 (≤100 墨色 `--ink-soft` / ≤300 赭黄 `--data-3` / 更高 + 丢包点红 `--pen-red`; loss 模式正常点用 `--ink-line-soft` 压成底噪); 跨洋线路正常延迟 (150~280ms) 落在黄档, 红色只留给真故障
 - `src/components/DetailsGrid.tsx`: 单节点详情主信息区, 三段 (Live 实时指标 / GPU / Spec 静态规格)
-  - Live: CPU/内存/磁盘/swap (% + 已用/总量 + bar) + 网速 + 总流量 + 负载 1/5/15 + 连接/进程 + uptime
-  - 负载详情与首页便签卡同口径: `load1 / cpu_cores` 的真实百分比用于文字, 进度条只显示 0-100% 范围
+  - Live: CPU/内存/磁盘/swap (% + 已用/总量, 数值背后带用量底纹) + 网速 + 总流量 + 负载 1/5/15 + 连接/进程 + uptime
+  - 负载详情与首页便签卡同口径: `load1 / cpu_cores` 的真实百分比用于文字, 底纹按 100% 封顶
+  - **`MetricBox` 不要复用 `.node-metric-block`**: 该类 `::after` 在 50% 处画两栏账本中缝竖线, 便签卡里用来分隔左右两格是对的, 但详情页是每格独立的多列网格, 竖线会落在每个格子正中读作游离竖线
   - GPU: 有才显示, 每块利用率 + 显存 + 温度; Spec: CPU型号·核心 / arch / 虚拟化 / GPU名 / OS / 内核 / 最后更新
   - 便签卡收紧后, 流量/连接/负载/swap/CPU用量/内存磁盘明细/GPU 的**完整数据全在此查看**
 - `src/components/PriceTags.tsx`: 价格/到期/标签徽章组, `layout` prop —— `"flow"` (默认, Flex 自由换行, 表格/admin 用) / `"grid2"` (每行 2 个定宽 + truncate + title, 便签卡用); `showPrice` prop —— `false` 时只渲染自定义 tags, 价格/到期交给 `BillingBar` (便签卡在线卡用)
@@ -116,7 +124,8 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - **不自建地区筛选行**: 地区的选择入口是 `SummaryCards` 的地区条, 本组件只接收 `activeRegion` prop。概览与筛选是同一份数据, 各画一条就是重复
   - `GroupPill`: 极简文字 tab + active 红铅笔下划 + 衬线 italic, 选中值存 localStorage `nodeSelectedGroup`
   - 搜索框: 仅底部 1px 细线, focus 加红
-- `src/components/UsageBar.tsx`: 标尺式用量条 (`.rule-bar`), 阈值色 **常态墨色 `--ink-soft` / ≥60 赭黄 / ≥80 红**; 非 compact 变体额外出 eyebrow label + `.num-display` 百分比
+- `src/components/NumWash.tsx`: 印张式用量数值 (`.num-wash`), 底纹阈值 **常态墨 / ≥60 赭黄 / ≥80 红** (与 UsageBar 同口径, 改阈值要同改两处)。`percent` 定底纹长度与档位, `children` 走正常 JSX 所以单位/前后缀可自由排。**首页卡与详情页用量指标的唯一入口**
+- `src/components/UsageBar.tsx`: 标尺式用量条 (`.rule-bar`), 同套阈值色; **只剩 `NodeTable` 在用**
 - `src/components/NavBar.tsx`: 站点名衬线大号粗体 + 副标 Caveat "— monitor" 微旋红色
 - `src/pages/_layout.tsx`: 挂 `DynamicBackground` + `SmoothScroll` + `Outlet`; 首页内容区固定 `max-w-384` (1536px), NavBar 同宽对齐 (`mainContentWidth` 主题配置项未接入, 宽度写死)
 - `src/pages/Index.tsx`: 渲染 `SummaryCards` (汇总卡组) + `NodeDisplay` (节点列表); 内容壳同样 `max-w-384`; 旧的单行 ticker 已替换
@@ -169,11 +178,12 @@ ErrorBoundary → BrowserRouter → ThemeContext (固定 light) → Radix <Theme
 - `dist/`: 静态资源
 - 主题打包: `dist/` + 根目录的 `komari-theme.json` + `preview.png` → 压缩为 ZIP, 在 Komari 后台主题管理上传
 
-## 自动发布 (`.github/workflows/release.yaml`)
-- 触发: 推送到 `main` 分支, 或在 Actions 页面手动 `workflow_dispatch`
-- 版本号: `YY.MM.DD` (同一天多次发布自动追加 `-2` / `-3` 序号), tag 为 `vYY.MM.DD[-N]`
-- 流程: `npm ci` → `npm run build` → 注入版本到 `komari-theme.json` → 回写 commit 到 `main` 分支 (带 `[skip ci]`) → 打包 `dist/ + komari-theme.json + preview.png` 为 `komari-paper-vYY.MM.DD[-N].zip` → 创建正式 GitHub Release (`prerelease: false` + `make_latest: true`) + artifact
-- Release 说明: 自动聚合上一个 tag 至 HEAD 之间的非合并提交作为 changelog
+## 发布 (`.github/workflows/release.yaml`)
+- **触发: 打 tag, 不是推 main**。`git tag -a vYY.MM.DD -m "版本说明" && git push origin vYY.MM.DD`; 或 Actions 页 `workflow_dispatch` 手填一个已存在的 tag
+- **Release 说明 = tag message**。必须用附注 tag (`-a` / `-s`); 轻量 tag 没有 message, 正文会落回一句提示而不是静默发空说明
+- 版本号 = tag 去掉前导 `v`, 只注入构建产物里的 `komari-theme.json`, **不回写 commit 到 main** (tag 已是版本真值)
+- checkout 必须 `fetch-depth: 0` 且带 tag: 附注 tag 的 message 只存在于 tag 对象里, 浅克隆读不到
+- 流程: 解析 tag → 取 tag message 作说明 (剥 GPG 签名块) → 注入版本 → `npm run build` → 打包 `dist/ + komari-theme.json + preview.png` 为 `komari-paper-vX.zip` → 正式 Release (`make_latest`) + artifact
 - 安装: 在 Releases 页面下载该 zip, 上传到 Komari 后台 → 主题管理
 
 ## 已知约定

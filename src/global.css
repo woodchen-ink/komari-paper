@@ -796,6 +796,30 @@ body, * {
   display: none;
 }
 
+/* 纸感小标签 (.paper-tag): 印在纸上的墨块, 用于地址族标记这类"身份属性"。
+ *
+ * 走"墨底 + 反白字"而不是"淡底 + 深字": 卡内已经有大量 1px 描边的框
+ * (资源栏线 / 脚注分隔 / MiniBars), 再加一个描边小框只会混进背景噪音里;
+ * 实心墨块是卡内唯一的反白元素, 面积极小却一眼可见, 像印刷品上的角标。
+ *
+ * 用 --ink-soft 而不是纯 --ink: 它是静态属性不是实时数据, 不该比节点名还重。
+ * 几乎方角 (1px) 与卡片 2px 圆角同族; 不用 pill 圆角 (那是 web badge 的语言)。
+ */
+.paper-tag {
+  display: inline-block;
+  background: var(--ink-soft);
+  color: var(--paper-card);
+  border-radius: 1px;
+  padding: 0.05em 0.32em;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.45;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  /* 反白小字在暖纸上易糊, 关掉字距优化让字形保持清晰 */
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
 /* Drop cap: 段首大字母 (装饰文章引言用), 衬线粗体 */
 .drop-cap::first-letter {
   font-family: var(--font-serif);
@@ -888,3 +912,67 @@ a:hover {
   color: var(--pen-red);
   text-decoration-color: var(--pen-red);
 }
+
+/* ==============================================
+ * 印张式用量 (.num-wash): 用量画在数值"背后"的一块淡墨底纹上
+ *
+ * 底纹从左灌到 N%, 像印刷时这一格纸被油墨压过的部分。数值本身始终
+ * 满墨压在上层 —— 这是本方案的硬底线: 曾经试过让数字字形自身按液位
+ * 填充, 结果健康机队常态就在低位 (CPU 0.8%), 字形只有底部一丝被灌墨,
+ * 整个数字读作"没加载出来"。用量可以弱, 数值不能弱。
+ *
+ * 底纹色随比例分档 (与 UsageBar / trafficHelper 同一套阈值):
+ *   常态 墨色 16%  →  ≥60% 赭黄 22%  →  ≥80% 红 28%
+ * 色相与浓度双通道递进, 高负载格子在余光里就能跳出来; 常态一屏仍是
+ * 墨黑, 不稀释红色的警示力 (卡内配色约束见本文件顶部设计说明)。
+ *
+ * --wash-pct / --wash-ink / --wash-alpha 由组件计算后传入。
+ *
+ * 底纹刻意不用 z-index:-1 —— 负 z-index 子元素会画到"祖先背景之前", 直接
+ * 沉到 .paper-card 的不透明底色后面整块消失 (与本文件上方纸纹层踩过的是
+ * 同一个坑)。改成底纹 z-index:0 + 文本 z-index:1 抬起, 不依赖 isolation,
+ * 任何祖先层叠上下文都破坏不了。
+ * ============================================== */
+.num-wash {
+  position: relative;
+  display: inline-block;
+  padding: 0.12em 0.2em;
+  z-index: 0;
+}
+/* 铺满整格的变体 (便签卡): 量程 = 格子宽度而非数值宽度。
+ * 低用量时数值自身宽度的百分之几根本不可见, 整格作量程才有可辨的一小条 */
+.num-wash.block {
+  display: block;
+}
+/* 文本层: 组件把 children 包进 .num-wash-ink, 保证裸文本节点也被抬起 ——
+ * 只写 `> *` 的话, `0.8` 这种裸文本不是元素, 会留在底纹同层 */
+/* 文本层: 组件把 children 包进 .num-wash-ink 并抬到底纹之上。
+ * 用 z-index:1 而不是给底纹 z-index:-1 —— 负 z-index 会沉到 .paper-card
+ * 的不透明底色后面整块消失 (与本文件上方纸纹层是同一个坑)。
+ * display:block 让内部 flex 行正常排布, 不额外产生 inline 盒。 */
+.num-wash-ink {
+  position: relative;
+  z-index: 1;
+}
+/* 整格变体里文本层要撑满, 内部 flex 行才排得开; 行内变体保持 inline,
+ * 否则详情页那种"数值与其他 span 同基线"的排版会被撑成块级换行 */
+.num-wash.block > .num-wash-ink {
+  display: block;
+}
+.num-wash::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--wash-pct, 0%);
+  background: var(--wash-ink, var(--ink));
+  opacity: var(--wash-alpha, 0.16);
+  z-index: 0;
+  transition: width 0.35s ease-out, opacity 0.35s ease-out;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .num-wash::before { transition: none; }
+}
+
