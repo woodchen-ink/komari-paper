@@ -125,7 +125,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/components/NumWash.tsx`: 印张式用量数值 (`.num-wash`), 底纹阈值 **常态墨 / ≥60 赭黄 / ≥80 红** (与 UsageBar 同口径, 改阈值要同改两处)。`percent` 定底纹长度与档位, `children` 走正常 JSX 所以单位/前后缀可自由排。**首页卡与详情页用量指标的唯一入口**
 - `src/components/UsageBar.tsx`: 标尺式用量条 (`.rule-bar`), 同套阈值色; **只剩 `NodeTable` 在用**
 - `src/components/NavBar.tsx`: 站点名衬线大号粗体 + 副标 Caveat "— monitor" 微旋红色
-- `src/pages/_layout.tsx`: 挂 `DynamicBackground` + `SmoothScroll` + `Outlet`; 首页内容区固定 `max-w-384` (1536px), NavBar 同宽对齐 (`mainContentWidth` 主题配置项未接入, 宽度写死)
+- `src/pages/_layout.tsx`: 挂 `DynamicBackground` + `Outlet` (**不做 JS 平滑滚动**: 曾有 `SmoothScroll` 组件拦 wheel 事件用 rAF 缓动 `scrollTo`, 但它与原生滚动/中键 autoscroll 并行时会互相拽, 观感是上下拉扯, 已删除, 一律走原生滚动); 首页内容区固定 `max-w-384` (1536px), NavBar 同宽对齐 (`mainContentWidth` 主题配置项未接入, 宽度写死)
 - `src/pages/Index.tsx`: 渲染 `SummaryCards` (汇总卡组) + `NodeDisplay` (节点列表); 内容壳同样 `max-w-384`; 旧的单行 ticker 已替换
 - `src/components/SummaryCards.tsx`: 首页顶部汇总卡组 (取代旧 ticker)
   - `eyebrow Overview` 章节标题 + 指标卡网格 (移动 2 列 / 平板 3 列 / 桌面 6 列): 在线节点 (走 `CountUp`) / 内存用量% / 磁盘用量% / 总流量↑↓ / 实时网速↑↓ / 月成本 (有计费节点才显示)
