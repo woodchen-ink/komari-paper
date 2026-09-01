@@ -22,14 +22,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # 取全量历史 + tag: 附注 tag 的 message 只存在于 tag 对象里, 浅克隆读不到
           fetch-depth: 0
           ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: "npm"
@@ -99,14 +99,14 @@ jobs:
           ls -la "${ZIP_NAME}"
 
       - name: Upload artifact (always available)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: komari-paper-${{ steps.meta.outputs.tag }}
           path: komari-paper-*.zip
           retention-days: 90
 
       - name: Create / update Release with asset
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
           name: Komari Paper ${{ steps.meta.outputs.tag }}
