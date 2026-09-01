@@ -17,7 +17,6 @@ import Flag from "./Flag";
 import Tips from "./ui/tips";
 import PriceTags from "./PriceTags";
 import BillingBar from "./BillingBar";
-import MiniBars from "./MiniBars";
 import { useNodePing } from "@/hooks/useNodePing";
 
 /** 格式化秒 → "1d 2h" / "3h 4m" / "5m 6s" */
@@ -338,15 +337,13 @@ const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
           ))}
         </div>
 
-        {/* 二级 · 健康: 延迟 / 丢包 一行两列, 各自标签行 + 半宽柱图 (hover tooltip) */}
+        {/* 二级 · 健康: 延迟 / 丢包 一行两列, 仅标签 + 阈值色数值 */}
         <div className="grid grid-cols-2 gap-x-3">
           {/* 延迟 */}
           <div className="min-w-0">
-            {/* 这两格不加用量底纹: 底下的 MiniBars 是"逐点"着色 (哪一采样慢 /
-                哪一采样丢包), 而底纹只能按聚合值涂成一整片单色, 盖在柱图后面
-                会把逐点信息糊成一片 —— 延迟看不出"偶发尖峰", 丢包看不出
-                "丢在哪一段"。数值本身的阈值色已经给出当前好坏, 够了。 */}
-            <div className="flex items-center justify-between gap-1 mb-1">
+            {/* 这两格不加用量底纹: 聚合值涂成的一整片单色会盖过数值本身的
+                阈值色, 而阈值色已经给出当前好坏, 够了。 */}
+            <div className="flex items-center justify-between gap-1">
               <span className="flex items-center gap-1 eyebrow">
                 <Gauge className="size-3" />
                 Latency
@@ -363,11 +360,10 @@ const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
                 {ping?.latest == null ? "—" : `${Math.round(ping.latest)}ms`}
               </span>
             </div>
-            <MiniBars points={ping?.points ?? []} mode="latency" />
           </div>
-          {/* 丢包 (0 绿 / <5% 零星丢包黄 / ≥5% 持续丢包红), 与延迟分级同一套色阶 */}
+          {/* 丢包 (0 墨 / <5% 零星丢包黄 / ≥5% 持续丢包红), 与延迟分级同一套色阶 */}
           <div className="min-w-0">
-            <div className="flex items-center justify-between gap-1 mb-1">
+            <div className="flex items-center justify-between gap-1">
               <span className="flex items-center gap-1 eyebrow">
                 <Activity className="size-3" />
                 Loss
@@ -384,7 +380,6 @@ const Node = React.memo(({ basic, live, online, index }: NodeProps) => {
                 {ping?.loss == null ? "—" : `${ping.loss.toFixed(1)}%`}
               </span>
             </div>
-            <MiniBars points={ping?.points ?? []} mode="loss" />
           </div>
         </div>
 

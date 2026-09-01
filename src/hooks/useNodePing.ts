@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRPC2Call } from "@/contexts/RPC2Context";
 
 /**
- * 便签卡 ping 数据 hook: 按 uuid 拉最近 1h ping 记录, 汇总成单值供卡片迷你展示。
+ * 便签卡 ping 数据 hook: 按 uuid 拉最近 1h ping 记录, 汇总成延迟 / 丢包单值。
  *
  * 设计要点 (控制首页 N 节点请求量):
  *   - 模块级共享缓存: 同一 uuid 多个组件复用一份, 不重复发请求
@@ -28,18 +28,10 @@ interface TaskInfo {
 export interface NodePing {
   latest: number | null; // 最新延迟 (ms), null 表示无样本
   loss: number | null; // 丢包率 (%)
-  points: PingPoint[]; // 最近若干采样, 供迷你柱图 + tooltip
-}
-
-export interface PingPoint {
-  time: string; // ISO 时间, 供 tooltip
-  value: number; // 延迟 (ms), 丢包点为 0
-  lost: boolean; // 是否丢包 (原始 value < 0)
 }
 
 const REFRESH_MS = 60_000;
 const PING_HOURS = 1;
-const MINI_POINTS = 24; // 迷你柱图保留的采样点数
 
 type CacheEntry = {
   data: NodePing | null;
@@ -82,13 +74,7 @@ function summarize(records: PingRecord[], tasks: TaskInfo[]): NodePing | null {
   const latest = validRecs.length
     ? validRecs[validRecs.length - 1].value
     : null;
-  const points: PingPoint[] = recs.slice(-MINI_POINTS).map((r) => ({
-    time: r.time,
-    value: r.value < 0 ? 0 : r.value,
-    lost: r.value < 0,
-  }));
-
-  return { latest, loss, points };
+  return { latest, loss };
 }
 
 export function useNodePing(uuid: string, enabled = true): NodePing | null {

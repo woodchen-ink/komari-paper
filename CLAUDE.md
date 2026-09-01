@@ -20,7 +20,7 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/contexts/`: `PublicInfoContext`、`LiveDataContext` (实时数据)、`NodeListContext` (节点元信息)、`RPC2Context` (RPC 调用)
 - `src/lib/api.ts`、`src/lib/rpc2.ts`: API / RPC 客户端
 - `src/utils/regionHelper.ts`: 地区工具唯一归属地 —— `resolveRegionCode` (旗帜 emoji / 两字母 ISO / 特殊 emoji → 大写代码, 回退 `UN`, 结果即旗帜 SVG 文件名)、`regionFlagSrc` (**全项目唯一的旗帜路径约定, 勿在别处拼**)、`isRegionMatch` / `getRegionDisplayName` 等。`Flag.tsx` 只负责渲染, 不再自带解析逻辑
-- `src/utils/healthHelper.ts`: 网络质量阈值口径唯一归属地 —— `LATENCY_GOOD` (100ms) / `LATENCY_WARN` (300ms) / `LOSS_WARN` (5%) 常量 + `latencyLevel` / `lossLevel` (→ `HealthLevel`) + `healthColor` (档位 → 墨/赭黄/红)。原先这套阈值在 `Node.tsx` 内联三元与 `MiniBars.tsx` 的 `colorOf` 里各写一遍, 现统一到这里, 改档位只改一个文件
+- `src/utils/healthHelper.ts`: 网络质量阈值口径唯一归属地 —— `LATENCY_GOOD` (100ms) / `LATENCY_WARN` (300ms) / `LOSS_WARN` (5%) 常量 + `latencyLevel` / `lossLevel` (→ `HealthLevel`) + `healthColor` (档位 → 墨/赭黄/红)。原先这套阈值在 `Node.tsx` 内联三元里各处重写, 现统一到这里, 改档位只改一个文件
 - `src/utils/groupingHelper.ts`: 分组维度抽象 —— `GroupDimension` (`"group" | "region"`)、`bucketKeyOf` (按维度取桶键, 无值返回 null)、`hasCustomGroups` (决定是否自动退回按地区)、`regionBucketsOf` (地区归桶 + 计数, 多者在前)。首页地区筛选与详情页侧栏共用这一份
 - `src/types/LiveData.tsx`: `LiveData`、`Record` 实时数据类型
 - `src/contexts/NodeListContext.tsx`: `NodeBasicInfo` 节点元信息类型
@@ -94,10 +94,9 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
 - `src/components/DynamicBackground.tsx`: 纸面背景层 —— 用户自定义背景图 (sepia + multiply 半透明叠层, "夹照片"风格) + 其上的纸纹固定层 (细节见「纸纹背景」); vignette / 咖啡渍 / 墨点均已移除
 - `src/components/Node.tsx`: 便签风格紧凑节点卡 (`paper-card + node-card`), 信息密度高且分三级层次; `NodeGrid` 响应式网格 (手机 1 / 平板 2 / 笔记本 3 / 大屏 `2xl` 4 列, `items-stretch` 同行等高)
   - **三级信息层次** (靠规尺线 + 字阶分层, 不靠底色块): ① 资源块 (`.node-metric-block` 账本栏线 —— 无上框 / 下细线 / `::after` 中缝竖线, 视觉重心) ② 网络/健康 (主纸平铺墨色) ③ 脚注 (`.node-card-meta` 淡色 + 顶部细线)
-  - **印刷收敛**: 卡内常态只有墨黑 + 少量红。用量底纹 / MiniBars / BillingBar 到期的常态档全部走墨色, 只有警示 (赭黄) 与危险 (红) 才上色; 地址族标签走墨块反白, 不占用任何语义色。满屏绿会稀释红的警示力
-  - 卡内结构 (在线): **刊头** (`No.03` ···· uptime, `.leader` 点线连接。uptime 放这里是因为版式上它等同刊期/日期, 也让脚注行让出一格; 右端**不放地区代码** —— 旗帜与 `#group` 已各带一次地域信息, 且不少用户直接按国家简码分组, 再加一次是三重冗余) → 名称行 (旗 + 名衬线 600 + `#group` 红铅笔批注 + 右端 `.paper-tag` 地址族标签) → `.node-masthead-rule` 2px 粗线 → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + `NumWash` 数值 (背后带用量底纹) + 已用/总量 mono 小字, 无进度条) → **健康 2 列** (延迟 / 丢包, `.num-display` 数值带阈值色 + `MiniBars`; 延迟 ≤100 墨 / ≤300 黄 / 更高红, 丢包 0 墨 / <5% 黄 / ≥5% 红) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → `BillingBar` (价格 ···· 到期, 点线连接) → **脚注** (TCP ···· UDP ···· 进程 点线连接 / OS·arch·CPU型号) → tags (`PriceTags layout="grid2" showPrice={false}`, 仅自定义 tags, 无 tags 不占位)
-  - **健康两格 (延迟 / 丢包) 不加用量底纹**: 底下的 `MiniBars` 是**逐点**着色 (延迟看哪一采样慢, 丢包看丢在哪一段), 而底纹只能按聚合值涂成一整片单色, 盖在柱图后面会把逐点信息糊掉 —— 黄底吞掉红尖峰, 红底吞掉灰底噪。数值自身的阈值色已给出"当前好坏", 够了。试过一次, 信息表达是错的
-  - **健康排在网络之上**: 健康两格带 `MiniBars`, 是资源格之后视觉最重的块, 紧接刊头粗线能撑住卡片重心; 网络/流量是纯 mono 文本, 落到下半与 `BillingBar` 相邻更稳
+  - **印刷收敛**: 卡内常态只有墨黑 + 少量红。用量底纹 / BillingBar 到期的常态档全部走墨色, 只有警示 (赭黄) 与危险 (红) 才上色; 地址族标签走墨块反白, 不占用任何语义色。满屏绿会稀释红的警示力
+  - 卡内结构 (在线): **刊头** (`No.03` ···· uptime, `.leader` 点线连接。uptime 放这里是因为版式上它等同刊期/日期, 也让脚注行让出一格; 右端**不放地区代码** —— 旗帜与 `#group` 已各带一次地域信息, 且不少用户直接按国家简码分组, 再加一次是三重冗余) → 名称行 (旗 + 名衬线 600 + `#group` 红铅笔批注 + 右端 `.paper-tag` 地址族标签) → `.node-masthead-rule` 2px 粗线 → **资源 2×2** (CPU/内存/磁盘/负载, 每格 `eyebrow` 标签 + `NumWash` 数值 (背后带用量底纹) + 已用/总量 mono 小字, 无进度条) → **健康 2 列** (延迟 / 丢包, `.num-display` 数值带阈值色, 无柱图; 延迟 ≤100 墨 / ≤300 黄 / 更高红, 丢包 0 墨 / <5% 黄 / ≥5% 红) → **网络 2 列** (实时网速 ↑↓ / 总流量 ↑↓) → `BillingBar` (价格 ···· 到期, 点线连接) → **脚注** (TCP ···· UDP ···· 进程 点线连接 / OS·arch·CPU型号) → tags (`PriceTags layout="grid2" showPrice={false}`, 仅自定义 tags, 无 tags 不占位)
+  - **健康两格 (延迟 / 丢包) 只出数值, 不画柱图也不加用量底纹**: 逐点柱图 (`MiniBars`) 已移除 —— 首页看的是"当前好坏", 逐点采样属于详情页 `PingChart` 的职责, 卡内重复一份只是加噪。底纹同样不加: 按聚合值涂满的一片单色会盖过数值本身的阈值色, 而阈值色已经把好坏说清楚了
   - 地址族标签 (`V4` / `V6` / **`V10` = 双栈, 4+6, 有意为之**) 放名称行右端, 与旗帜 / `#group` 同属"身份"信息; 走 `.paper-tag` 实心墨块而非描边 —— 卡内 1px 描边已经很多, 再加描边框只会混进背景
   - 刊头编号来自 `NodeGrid` 传入的 `index` prop (从 1 起)
   - 脚注点线行在极窄卡片下先缩点线, 仍放不下才裁切尾部 (`overflow-hidden`), 完整内容挂在 `title` 上
@@ -106,10 +105,9 @@ Komari Web UI 的「Editorial Paper」主题。设计语言参考 Stripe Press /
   - 负载基准: `load1 / cpu_cores` 折百分比; 文字显示真实比例 (可超过 100%), 进度条按 100% 封顶; 多 ping task 取延迟最低的 task
   - 离线: 红铅笔脉冲点 + 名 + 分组 + Caveat "offline" 批注 + 价格 (离线卡仍走 `PriceTags` 带价格); ping 不拉取
   - `formatUptime` 仍 export (被 `DetailsGrid` / `NodeTable` 引用)
-- `src/hooks/useNodePing.ts`: 便签卡 ping 数据 hook —— RPC2 `common:getRecords` 按 uuid 拉最近 1h, 汇总成 `{latest, loss, values[]}`
+- `src/hooks/useNodePing.ts`: 便签卡 ping 数据 hook —— RPC2 `common:getRecords` 按 uuid 拉最近 1h, 汇总成 `{latest, loss}`
   - **控制首页 N 节点请求量**: 模块级 `cache` (同 uuid 多组件共享一份, 不重复请求) + 60s 节流 + 按 uuid 错峰 0~800ms 首拉 + 离线节点 `enabled=false` 不拉
   - 多 task 取延迟最低者; 丢包率 = `value<0 计数 / 总计 × 100`; 失败/无数据返回 null 不阻塞
-- `src/components/MiniBars.tsx`: 纯 CSS 迷你柱图 (不引 Recharts), 柱高 = 延迟相对峰值占比, 阈值色 (≤100 墨色 `--ink-soft` / ≤300 赭黄 `--data-3` / 更高 + 丢包点红 `--pen-red`; loss 模式正常点用 `--ink-line-soft` 压成底噪); 跨洋线路正常延迟 (150~280ms) 落在黄档, 红色只留给真故障
 - `src/components/DetailsGrid.tsx`: 单节点详情主信息区, 三段 (Live 实时指标 / GPU / Spec 静态规格)
   - Live: CPU/内存/磁盘/swap (% + 已用/总量, 数值背后带用量底纹) + 网速 + 总流量 + 负载 1/5/15 + 连接/进程 + uptime
   - 负载详情与首页便签卡同口径: `load1 / cpu_cores` 的真实百分比用于文字, 底纹按 100% 封顶
